@@ -7,9 +7,11 @@ import '../Account/AccountDashboardView.dart';
 import '../Account/ProfileView.dart';
 import '../Admin/AdminDashboardView.dart';
 import '../Booking/ConfirmBookingView.dart';
+import '../Booking/CheckoutView.dart';
 import '../Booking/TimeSlotPickerView.dart';
 import '../Dashboard/Appointments/BeauticianhDashboardView.dart';
 import '../Dashboard/Appointments/MyAppointmentsView.dart';
+import '../Dashboard/Appointments/EditAppointmentView.dart';
 import '../Dashboard/Services/ServiceDetailView.dart';
 import '../Dashboard/Services/AddServiceView.dart';
 import '../Dashboard/Services/EditServiceView.dart';
@@ -41,8 +43,9 @@ class _KBeautyAppState extends State<KBeautyApp> {
       final location = state.matchedLocation;
       final authenticated = widget.manager.isAuthenticated;
       final authRoute = location == '/login' || location == '/signup';
-      final protected = location == '/appointments' ||
+      final protected = location.startsWith('/appointments') ||
           location == '/booking/confirm' ||
+          location.startsWith('/checkout/') ||
           location.startsWith('/account/') ||
           location == '/admin' ||
           location.startsWith('/reviews/') ||
@@ -101,6 +104,14 @@ class _KBeautyAppState extends State<KBeautyApp> {
             ConfirmBookingView(manager: widget.manager),
       ),
       GoRoute(
+        path: '/checkout/:booking_id',
+        name: 'checkout',
+        builder: (context, state) => CheckoutView(
+          manager: widget.manager,
+          bookingId: state.pathParameters['booking_id'] ?? '',
+        ),
+      ),
+      GoRoute(
         path: '/account/dashboard',
         name: 'account_dashboard',
         builder: (context, state) =>
@@ -119,6 +130,14 @@ class _KBeautyAppState extends State<KBeautyApp> {
         name: 'my_appointments',
         builder: (context, state) =>
             MyAppointmentsView(manager: widget.manager),
+      ),
+      GoRoute(
+        path: '/appointments/:id/edit',
+        name: 'edit_appointment',
+        builder: (context, state) => EditAppointmentView(
+          manager: widget.manager,
+          appointmentId: state.pathParameters['id'] ?? '',
+        ),
       ),
       GoRoute(
         path: '/beautician/dashboard',

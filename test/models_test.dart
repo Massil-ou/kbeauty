@@ -40,6 +40,13 @@ void main() {
       'location': '12 rue Test',
       'status': 'confirmed',
       'beauticianhStatus': 'confirmed',
+      'paymentStatus': 'paid',
+      'canCancel': true,
+      'canReschedule': true,
+      'canEditDetails': true,
+      'changeCutoffHours': 24,
+      'serviceId': 'service-1',
+      'beauticianhId': 'beautician-1',
       'client': {
         'firstName': 'Celia',
         'lastName': 'Test',
@@ -50,5 +57,21 @@ void main() {
     expect(appointment.bookingId, 'booking-1');
     expect(appointment.client.fullName, 'Celia Test');
     expect(appointment.durationMinutes, 90);
+    expect(appointment.canCancel, isTrue);
+    expect(appointment.changeCutoffHours, 24);
+  });
+
+  test('parses Stripe checkout payload', () {
+    final checkout = StripeCheckoutModel.fromJson({
+      'bookingId': 'booking-1',
+      'checkoutId': 'cs_test_1',
+      'checkoutUrl': 'https://checkout.stripe.com/test',
+      'status': 'open',
+      'amount': 75.50,
+      'currency': 'eur',
+    });
+
+    expect(checkout.checkoutId, 'cs_test_1');
+    expect(checkout.amount, 75.50);
   });
 }

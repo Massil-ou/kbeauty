@@ -70,6 +70,9 @@ class BookingModel {
   final double totalAmount;
   final String paymentStatus;
   final String? stripeSessionId;
+  final String serviceTitle;
+  final String serviceCategory;
+  final String beauticianName;
 
   BookingModel({
     required this.id,
@@ -84,6 +87,9 @@ class BookingModel {
     required this.totalAmount,
     required this.paymentStatus,
     this.stripeSessionId,
+    this.serviceTitle = '',
+    this.serviceCategory = '',
+    this.beauticianName = '',
   });
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
@@ -101,6 +107,9 @@ class BookingModel {
       totalAmount: (json['amount'] as num?)?.toDouble() ?? 0,
       paymentStatus: json['paymentStatus'] ?? 'pending',
       stripeSessionId: json['stripeSessionId'],
+      serviceTitle: json['serviceTitle']?.toString() ?? '',
+      serviceCategory: json['serviceCategory']?.toString() ?? '',
+      beauticianName: json['beauticianName']?.toString() ?? '',
     );
   }
 
@@ -117,7 +126,38 @@ class BookingModel {
         'amount': totalAmount,
         'paymentStatus': paymentStatus,
         'stripeSessionId': stripeSessionId,
+        'serviceTitle': serviceTitle,
+        'serviceCategory': serviceCategory,
+        'beauticianName': beauticianName,
       };
+}
+
+class StripeCheckoutModel {
+  const StripeCheckoutModel({
+    required this.bookingId,
+    required this.checkoutId,
+    required this.checkoutUrl,
+    required this.status,
+    required this.amount,
+    required this.currency,
+  });
+
+  final String bookingId;
+  final String checkoutId;
+  final String checkoutUrl;
+  final String status;
+  final double amount;
+  final String currency;
+
+  factory StripeCheckoutModel.fromJson(Map<String, dynamic> json) =>
+      StripeCheckoutModel(
+        bookingId: json['bookingId']?.toString() ?? '',
+        checkoutId: json['checkoutId']?.toString() ?? '',
+        checkoutUrl: json['checkoutUrl']?.toString() ?? '',
+        status: json['status']?.toString() ?? 'open',
+        amount: (json['amount'] as num?)?.toDouble() ?? 0,
+        currency: json['currency']?.toString() ?? 'eur',
+      );
 }
 
 class AppointmentModel {
@@ -133,6 +173,19 @@ class AppointmentModel {
   final String? clientNotes;
   final ClientProfileModel client;
   final String beauticianName;
+  final String serviceId;
+  final String beauticianhId;
+  final String paymentStatus;
+  final String? locationCity;
+  final String? locationWilaya;
+  final String? locationCommune;
+  final String? beauticianNotes;
+  final String? cancellationReason;
+  final String? cancelledBy;
+  final bool canCancel;
+  final bool canReschedule;
+  final bool canEditDetails;
+  final int changeCutoffHours;
   final DateTime? completedAt;
 
   AppointmentModel({
@@ -148,6 +201,19 @@ class AppointmentModel {
     this.clientNotes,
     required this.client,
     this.beauticianName = '',
+    this.serviceId = '',
+    this.beauticianhId = '',
+    this.paymentStatus = 'paid',
+    this.locationCity,
+    this.locationWilaya,
+    this.locationCommune,
+    this.beauticianNotes,
+    this.cancellationReason,
+    this.cancelledBy,
+    this.canCancel = false,
+    this.canReschedule = false,
+    this.canEditDetails = false,
+    this.changeCutoffHours = 24,
     this.completedAt,
   });
 
@@ -166,6 +232,19 @@ class AppointmentModel {
       clientNotes: json['clientNotes'],
       client: ClientProfileModel.fromJson(json['client'] ?? {}),
       beauticianName: json['beauticianName']?.toString() ?? '',
+      serviceId: json['serviceId']?.toString() ?? '',
+      beauticianhId: json['beauticianhId']?.toString() ?? '',
+      paymentStatus: json['paymentStatus']?.toString() ?? 'paid',
+      locationCity: json['locationCity']?.toString(),
+      locationWilaya: json['locationWilaya']?.toString(),
+      locationCommune: json['locationCommune']?.toString(),
+      beauticianNotes: json['beauticianNotes']?.toString(),
+      cancellationReason: json['cancellationReason']?.toString(),
+      cancelledBy: json['cancelledBy']?.toString(),
+      canCancel: json['canCancel'] == true,
+      canReschedule: json['canReschedule'] == true,
+      canEditDetails: json['canEditDetails'] == true,
+      changeCutoffHours: (json['changeCutoffHours'] as num?)?.toInt() ?? 24,
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'])
           : null,

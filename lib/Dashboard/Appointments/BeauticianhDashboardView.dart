@@ -41,6 +41,12 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
         final confirmed = _appointmentManager.appointments
             .where((item) => item.status == 'confirmed')
             .toList();
+        final history = _appointmentManager.appointments
+            .where(
+              (item) =>
+                  item.status == 'completed' || item.status == 'cancelled',
+            )
+            .toList();
         return KBeautyPage(
           manager: widget.manager,
           title: 'Espace professionnelle',
@@ -151,8 +157,24 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
                   (appointment) => _ConfirmedCard(
                     appointment,
                     onComplete: () => _complete(appointment.id),
+                    onNotes: () => _editNotes(appointment),
                   ),
                 ),
+              const SizedBox(height: 26),
+              KBeautySectionTitle(
+                title: 'Historique',
+                subtitle:
+                    '${history.length} rendez-vous terminé(s) ou annulé(s).',
+              ),
+              const SizedBox(height: 14),
+              if (history.isEmpty)
+                const KBeautyEmptyState(
+                  icon: Icons.history_rounded,
+                  title: 'Historique vide',
+                  message: 'Les rendez-vous terminés apparaîtront ici.',
+                )
+              else
+                ...history.take(20).map(_HistoryCard.new),
             ],
           ),
         );
@@ -254,6 +276,42 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
         const SnackBar(content: Text('Rendez-vous marqué comme terminé.')),
       );
     }
+  }
+
+  Future<void> _editNotes(AppointmentModel appointment) async {
+    final controller = TextEditingController(
+      text: appointment.beauticianNotes ?? '',
+    );
+    final notes = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Notes professionnelles'),
+        content: TextField(
+          controller: controller,
+          maxLines: 5,
+          decoration: const InputDecoration(
+            labelText: 'Notes privées sur le rendez-vous',
+            alignLabelWithHint: true,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (notes == null) return;
+    await _appointmentManager.updateAppointment(
+      appointment.id,
+      beauticianNotes: notes,
+    );
   }
 }
 
@@ -367,10 +425,15 @@ class _RequestCard extends StatelessWidget {
 }
 
 class _ConfirmedCard extends StatelessWidget {
-  const _ConfirmedCard(this.appointment, {required this.onComplete});
+  const _ConfirmedCard(
+    this.appointment, {
+    required this.onComplete,
+    required this.onNotes,
+  });
 
   final AppointmentModel appointment;
   final VoidCallback onComplete;
+  final VoidCallback onNotes;
 
   @override
   Widget build(BuildContext context) {
@@ -386,6 +449,15 @@ class _ConfirmedCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onNotes,
+              icon: const Icon(Icons.notes_outlined),
+              label: const Text('Ajouter des notes'),
+            ),
+          ),
+          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -456,6 +528,27 @@ class _AppointmentHeader extends StatelessWidget {
         ),
         status,
       ],
+    );
+  }
+}
+
+class _HistoryCard extends StatelessWidget {
+  const _HistoryCard(this.appointment);
+
+  final AppointmentModel appointment;
+
+  @override
+  Widget build(BuildContext context) {
+    final completed = appointment.status == 'completed';
+    return KBeautyCard(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: _AppointmentHeader(
+        appointment: appointment,
+        status: KBeautyStatusChip(
+          label: completed ? 'Terminé' : 'Annulé',
+          color: completed ? KBeautyTheme.lilac : KBeautyTheme.danger,
+        ),
+      ),
     );
   }
 }

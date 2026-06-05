@@ -96,6 +96,44 @@ class AppointmentManager extends ChangeNotifier {
         reason: reason,
       );
 
+  Future<bool> updateAppointment(
+    String appointmentId, {
+    String? scheduledDate,
+    String? scheduledTime,
+    String? locationAddress,
+    String? locationCity,
+    String? locationWilaya,
+    String? locationCommune,
+    String? clientNotes,
+    String? beauticianNotes,
+  }) async {
+    try {
+      final response = await _manager.dio.post(
+        '/kbeauty/appointments/update',
+        data: {
+          'appointment_id': appointmentId,
+          if (scheduledDate != null) 'scheduled_date': scheduledDate,
+          if (scheduledTime != null) 'scheduled_time': scheduledTime,
+          if (locationAddress != null) 'location_address': locationAddress,
+          if (locationCity != null) 'location_city': locationCity,
+          if (locationWilaya != null) 'location_wilaya': locationWilaya,
+          if (locationCommune != null) 'location_commune': locationCommune,
+          if (clientNotes != null) 'client_notes': clientNotes,
+          if (beauticianNotes != null) 'beautician_notes': beauticianNotes,
+        },
+      );
+      if (response.data['success'] == true) {
+        await listAppointments();
+        return true;
+      }
+      lastError = response.data['message']?.toString();
+    } catch (e) {
+      lastError = e.toString();
+    }
+    notifyListeners();
+    return false;
+  }
+
   Future<bool> _appointmentAction(
     String endpoint,
     String appointmentId, {

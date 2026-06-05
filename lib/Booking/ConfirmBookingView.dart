@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../App/Manager.dart';
 import '../Shared/KBeautyTheme.dart';
@@ -91,7 +92,7 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
                   label: Text(
                     _bookingManager.isSaving
                         ? 'Création en cours...'
-                        : 'Créer la réservation',
+                        : 'Continuer vers le paiement',
                   ),
                 ),
               ),
@@ -231,11 +232,7 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
       locationWilaya: _wilaya.text.trim().isEmpty ? null : _wilaya.text.trim(),
     );
     if (booking != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Réservation créée. Vous pouvez procéder au paiement.'),
-        ),
-      );
+      context.go('/checkout/${booking.id}');
     }
   }
 }

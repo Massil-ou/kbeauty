@@ -17,18 +17,20 @@ class MyAppointmentsView extends StatefulWidget {
 
 class _MyAppointmentsViewState extends State<MyAppointmentsView> {
   late final _appointmentManager = widget.manager.appointmentManager;
+  late final _bookingManager = widget.manager.bookingManager;
   String _activeTab = 'upcoming';
 
   @override
   void initState() {
     super.initState();
     _appointmentManager.listAppointments();
+    _bookingManager.listPendingBookings();
   }
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: _appointmentManager,
+      listenable: Listenable.merge([_appointmentManager, _bookingManager]),
       builder: (context, _) {
         final appointments = _appointmentManager.appointments.where((item) {
           if (_activeTab == 'completed') {
@@ -68,6 +70,17 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                 ),
               ),
               const SizedBox(height: 18),
+              if (_activeTab == 'upcoming' &&
+                  _bookingManager.pendingBookings.isNotEmpty) ...[
+                KBeautySectionTitle(
+                  title: 'Paiements en attente',
+                  subtitle:
+                      '${_bookingManager.pendingBookings.length} réservation(s) à finaliser.',
+                ),
+                const SizedBox(height: 12),
+                ..._bookingManager.pendingBookings.map(_pendingBookingCard),
+                const SizedBox(height: 18),
+              ],
               if (_appointmentManager.isLoading)
                 const Center(
                   child: Padding(
@@ -75,7 +88,9 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                     child: CircularProgressIndicator(),
                   ),
                 )
-              else if (appointments.isEmpty)
+              else if (appointments.isEmpty &&
+                  !(_activeTab == 'upcoming' &&
+                      _bookingManager.pendingBookings.isNotEmpty))
                 KBeautyEmptyState(
                   icon: Icons.calendar_today_outlined,
                   title: 'Aucun rendez-vous',
@@ -90,8 +105,11 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                 ...appointments.map(
                   (appointment) => _AppointmentCard(
                     appointment: appointment,
-                    onCancel: appointment.status == 'confirmed' ||
-                            appointment.status == 'pending_confirmation'
+                    onEdit: appointment.canEditDetails
+                        ? () =>
+                            context.go('/appointments/${appointment.id}/edit')
+                        : null,
+                    onCancel: appointment.canCancel
                         ? () => _cancel(appointment)
                         : null,
                     onReview: appointment.status == 'completed'
@@ -110,6 +128,74 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
       },
     );
   }
+
+  Widget _pendingBookingCard(BookingModel booking) => KBeautyCard(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const CircleAvatar(
+                  backgroundColor: KBeautyTheme.goldSoft,
+                  child: Icon(
+                    Icons.credit_card_outlined,
+                    color: KBeautyTheme.gold,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        booking.serviceTitle,
+                        style: const TextStyle(
+                          color: KBeautyTheme.text,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        '${booking.beauticianName} • ${booking.totalAmount.toStringAsFixed(2)} €',
+                        style: const TextStyle(
+                          color: KBeautyTheme.muted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const KBeautyStatusChip(
+                  label: 'À payer',
+                  color: KBeautyTheme.gold,
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      await _bookingManager.cancelUnpaidBooking(booking.id);
+                      await _bookingManager.listPendingBookings();
+                    },
+                    child: const Text('Supprimer'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => context.go('/checkout/${booking.id}'),
+                    icon: const Icon(Icons.lock_outline_rounded),
+                    label: const Text('Payer'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
 
   Future<void> _cancel(AppointmentModel appointment) async {
     final reason = TextEditingController();
@@ -200,11 +286,13 @@ class _AppointmentCard extends StatelessWidget {
     required this.appointment,
     this.onReview,
     this.onCancel,
+    this.onEdit,
   });
 
   final AppointmentModel appointment;
   final VoidCallback? onReview;
   final VoidCallback? onCancel;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -310,6 +398,30 @@ class _AppointmentCard extends StatelessWidget {
                 ),
                 icon: const Icon(Icons.cancel_outlined),
                 label: const Text('Annuler le rendez-vous'),
+              ),
+            ),
+          ],
+          if (onEdit != null) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit_calendar_outlined),
+                label: const Text('Modifier ou replanifier'),
+              ),
+            ),
+          ],
+          if (!appointment.canCancel &&
+              (appointment.status == 'confirmed' ||
+                  appointment.status == 'pending_confirmation')) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Le créneau payé n’est plus replanifiable ni annulable à moins de ${appointment.changeCutoffHours} heures. Les instructions restent modifiables.',
+              style: const TextStyle(
+                color: KBeautyTheme.muted,
+                fontSize: 11,
+                height: 1.4,
               ),
             ),
           ],
