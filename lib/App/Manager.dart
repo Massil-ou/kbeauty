@@ -22,26 +22,51 @@ class Manager extends ChangeNotifier {
 
   Manager._internal();
 
+  String? _accessToken = const String.fromEnvironment('ACCESS_TOKEN').trim();
+  String? _deviceToken = const String.fromEnvironment('DEVICE_TOKEN').trim();
+  String? _currentUserId = const String.fromEnvironment('USER_ID').trim();
+  String? _currentUserRole = const String.fromEnvironment('USER_ROLE').trim();
+
   // =========================================================================
   // AUTHENTICATION STATE (from Cutoma)
   // =========================================================================
 
-  bool get isAuthenticated => false; // TODO: check if tokens exist
-  String? get currentUserId => null; // TODO: get from HelperService
-  bool get isClientRole => false; // TODO: check user role
-  bool get isBeauticianhRole => false; // TODO: check user role
+  bool get isAuthenticated =>
+      _accessToken?.isNotEmpty == true && _deviceToken?.isNotEmpty == true;
+  String? get currentUserId => _currentUserId;
+  bool get isClientRole => _currentUserRole == 'client';
+  bool get isBeauticianhRole => _currentUserRole == 'beautician';
+
+  void configureAuth({
+    required String accessToken,
+    required String deviceToken,
+    required String userId,
+    required String role,
+  }) {
+    _accessToken = accessToken.trim();
+    _deviceToken = deviceToken.trim();
+    _currentUserId = userId.trim();
+    _currentUserRole = role.trim();
+    notifyListeners();
+  }
+
+  void clearAuth() {
+    _accessToken = null;
+    _deviceToken = null;
+    _currentUserId = null;
+    _currentUserRole = null;
+    notifyListeners();
+  }
 
   // =========================================================================
   // LAZY-INITIALIZED MANAGERS
   // =========================================================================
 
   ServiceManager? _serviceManager;
-  ServiceManager get serviceManager =>
-      _serviceManager ??= ServiceManager(this);
+  ServiceManager get serviceManager => _serviceManager ??= ServiceManager(this);
 
   BookingManager? _bookingManager;
-  BookingManager get bookingManager =>
-      _bookingManager ??= BookingManager(this);
+  BookingManager get bookingManager => _bookingManager ??= BookingManager(this);
 
   AvailabilityManager? _availabilityManager;
   AvailabilityManager get availabilityManager =>
@@ -56,8 +81,7 @@ class Manager extends ChangeNotifier {
       _beauticianhProfileManager ??= BeauticianhProfileManager(this);
 
   ReviewManager? _reviewManager;
-  ReviewManager get reviewManager =>
-      _reviewManager ??= ReviewManager(this);
+  ReviewManager get reviewManager => _reviewManager ??= ReviewManager(this);
 
   // =========================================================================
   // NETWORK CONFIGURATION
@@ -66,12 +90,30 @@ class Manager extends ChangeNotifier {
   late final Dio dio = _createDio();
 
   Dio _createDio() {
-    return Dio(BaseOptions(
-      baseUrl: 'https://api.kbeauty.fr', // TODO: use env variable
+    const apiBaseUrl = String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'https://api.winycar.fr',
+    );
+    final dio = Dio(BaseOptions(
+      baseUrl: apiBaseUrl,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       contentType: 'application/json',
     ));
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (_accessToken?.isNotEmpty == true) {
+            options.headers['Authorization'] = 'Bearer $_accessToken';
+          }
+          if (_deviceToken?.isNotEmpty == true) {
+            options.headers['X-Device-Id'] = _deviceToken;
+          }
+          handler.next(options);
+        },
+      ),
+    );
+    return dio;
   }
 
   // =========================================================================

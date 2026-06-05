@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../Shared/Models.dart';
-import 'Manager.dart';
+import '../App/Manager.dart';
 
 /// BookingManager handles creating and managing bookings
 class BookingManager extends ChangeNotifier {
@@ -52,8 +52,9 @@ class BookingManager extends ChangeNotifier {
       if (response.data['success']) {
         final data = response.data['data'];
         availableSlots = (data['slots'] as List?)?.map((s) {
-          return AvailabilitySlotModel.fromJson(s);
-        }).toList() ?? [];
+              return AvailabilitySlotModel.fromJson(s);
+            }).toList() ??
+            [];
         lastError = null;
       } else {
         lastError = response.data['message'];

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../App/Manager.dart';
 import '../Shared/Models.dart';
 
@@ -89,7 +90,8 @@ class _OffreViewState extends State<OffreView> {
                         selected: isSelected,
                         label: Text(cat),
                         onSelected: (selected) {
-                          setState(() => _selectedCategory = selected ? cat : null);
+                          setState(
+                              () => _selectedCategory = selected ? cat : null);
                           _performSearch();
                         },
                         backgroundColor: Colors.grey[200],
@@ -106,7 +108,8 @@ class _OffreViewState extends State<OffreView> {
 
               // Services List
               if (_serviceManager.isLoading)
-                const Center(child: Padding(
+                const Center(
+                    child: Padding(
                   padding: EdgeInsets.all(20),
                   child: CircularProgressIndicator(),
                 ))
@@ -114,7 +117,8 @@ class _OffreViewState extends State<OffreView> {
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
-                    child: Text(_serviceManager.lastError ?? 'Aucun service trouvé'),
+                    child: Text(
+                        _serviceManager.lastError ?? 'Aucun service trouvé'),
                   ),
                 )
               else
@@ -225,11 +229,12 @@ class _ServiceCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.star, size: 14, color: Colors.amber),
+                      const Icon(Icons.star, size: 14, color: Colors.amber),
                       const SizedBox(width: 4),
                       Text(
-                        '${service.rating.toStringAsFixed(1)}',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        service.rating.toStringAsFixed(1),
+                        style: const TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(width: 8),
                       Text(

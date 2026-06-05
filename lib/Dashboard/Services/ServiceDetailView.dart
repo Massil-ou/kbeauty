@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../App/Manager.dart';
-import '../Shared/Models.dart';
+import '../../App/Manager.dart';
 
 class ServiceDetailView extends StatefulWidget {
   const ServiceDetailView({
@@ -38,7 +37,8 @@ class _ServiceDetailViewState extends State<ServiceDetailView> {
           }
 
           if (_serviceManager.selectedService == null) {
-            return Center(child: Text(_serviceManager.lastError ?? 'Service non trouvé'));
+            return Center(
+                child: Text(_serviceManager.lastError ?? 'Service non trouvé'));
           }
 
           final service = _serviceManager.selectedService!;
@@ -52,7 +52,8 @@ class _ServiceDetailViewState extends State<ServiceDetailView> {
                   Stack(
                     children: [
                       PageView.builder(
-                        onPageChanged: (idx) => setState(() => _currentImageIndex = idx),
+                        onPageChanged: (idx) =>
+                            setState(() => _currentImageIndex = idx),
                         itemCount: service.images.length,
                         itemBuilder: (_, idx) => Image.network(
                           service.images[idx],
@@ -156,24 +157,29 @@ class _ServiceDetailViewState extends State<ServiceDetailView> {
                                     shape: BoxShape.circle,
                                     color: const Color(0xFF7C3AED),
                                   ),
-                                  child: const Icon(Icons.person, color: Colors.white),
+                                  child: const Icon(Icons.person,
+                                      color: Colors.white),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         service.beautician.fullName,
-                                        style: const TextStyle(fontWeight: FontWeight.w700),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w700),
                                       ),
                                       Row(
                                         children: [
-                                          Icon(Icons.star, size: 14, color: Colors.amber),
+                                          Icon(Icons.star,
+                                              size: 14, color: Colors.amber),
                                           const SizedBox(width: 4),
                                           Text(
                                             '${service.beautician.rating.toStringAsFixed(1)} (${service.beautician.appointmentCount})',
-                                            style: const TextStyle(fontSize: 12),
+                                            style:
+                                                const TextStyle(fontSize: 12),
                                           ),
                                         ],
                                       ),
@@ -186,7 +192,8 @@ class _ServiceDetailViewState extends State<ServiceDetailView> {
                               const SizedBox(height: 12),
                               Text(
                                 service.beautician.bio!,
-                                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                style: TextStyle(
+                                    color: Colors.grey[600], fontSize: 13),
                               ),
                             ],
                           ],

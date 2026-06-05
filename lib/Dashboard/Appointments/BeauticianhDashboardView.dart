@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import '../App/Manager.dart';
-import '../Shared/Models.dart';
+import '../../App/Manager.dart';
+import '../../Shared/Models.dart';
 
 class BeauticianhDashboardView extends StatefulWidget {
   const BeauticianhDashboardView({super.key, required this.manager});
   final Manager manager;
 
   @override
-  State<BeauticianhDashboardView> createState() => _BeauticianhDashboardViewState();
+  State<BeauticianhDashboardView> createState() =>
+      _BeauticianhDashboardViewState();
 }
 
 class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
@@ -51,7 +52,8 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
                         Expanded(
                           child: _StatBox(
                             title: 'En attente',
-                            value: '${_appointmentManager.pendingConfirmations.length}',
+                            value:
+                                '${_appointmentManager.pendingConfirmations.length}',
                             icon: Icons.hourglass_top,
                           ),
                         ),
@@ -59,7 +61,8 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
                         Expanded(
                           child: _StatBox(
                             title: 'Confirmés',
-                            value: '${_appointmentManager.appointments.where((a) => a.status == 'confirmed').length}',
+                            value:
+                                '${_appointmentManager.appointments.where((a) => a.status == 'confirmed').length}',
                             icon: Icons.check_circle,
                           ),
                         ),
@@ -117,21 +120,24 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
                       Column(
                         children: _appointmentManager.pendingConfirmations
                             .map((apt) => _PendingAppointmentCard(
-                              appointment: apt,
-                              onConfirm: () async {
-                                await _appointmentManager.confirmAppointment(apt.id);
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Rendez-vous confirmé!'),
-                                    ),
-                                  );
-                                }
-                              },
-                              onDecline: () {
-                                _showDeclineDialog(context, apt.id);
-                              },
-                            ))
+                                  appointment: apt,
+                                  onConfirm: () async {
+                                    await _appointmentManager
+                                        .confirmAppointment(apt.id);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content:
+                                              Text('Rendez-vous confirmé!'),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  onDecline: () {
+                                    _showDeclineDialog(context, apt.id);
+                                  },
+                                ))
                             .toList(),
                       ),
                   ],
@@ -163,7 +169,8 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
                       Column(
                         children: _appointmentManager.appointments
                             .where((a) => a.status == 'confirmed')
-                            .map((apt) => _UpcomingAppointmentCard(appointment: apt))
+                            .map((apt) =>
+                                _UpcomingAppointmentCard(appointment: apt))
                             .toList(),
                       ),
                   ],

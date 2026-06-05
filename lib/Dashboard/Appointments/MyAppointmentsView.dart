@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../App/Manager.dart';
-import '../Shared/Models.dart';
+import '../../App/Manager.dart';
+import '../../Shared/Models.dart';
 
 class MyAppointmentsView extends StatefulWidget {
   const MyAppointmentsView({super.key, required this.manager});
@@ -55,7 +55,8 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                   : _appointmentManager.appointments.isEmpty
                       ? Center(
                           child: Text(
-                            _appointmentManager.lastError ?? 'Aucun rendez-vous',
+                            _appointmentManager.lastError ??
+                                'Aucun rendez-vous',
                           ),
                         )
                       : ListView.builder(
@@ -210,7 +211,8 @@ class _AppointmentCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getStatusColor(appointment.status).withValues(alpha: 0.1),
+                  color: _getStatusColor(appointment.status)
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(

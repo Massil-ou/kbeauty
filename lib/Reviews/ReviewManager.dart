@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../Shared/Models.dart';
-import 'Manager.dart';
+import '../App/Manager.dart';
 
 /// ReviewManager for service reviews and ratings
 class ReviewManager extends ChangeNotifier {
@@ -52,8 +52,9 @@ class ReviewManager extends ChangeNotifier {
       if (response.data['success']) {
         final data = response.data['data'];
         reviews = (data['reviews'] as List?)?.map((r) {
-          return ReviewModel.fromJson(r);
-        }).toList() ?? [];
+              return ReviewModel.fromJson(r);
+            }).toList() ??
+            [];
         lastError = null;
       } else {
         lastError = response.data['message'];

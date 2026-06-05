@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../Shared/Models.dart';
-import 'Manager.dart';
+import '../App/Manager.dart';
 
 /// AppointmentManager handles appointment lifecycle for both clients and beauticians
 class AppointmentManager extends ChangeNotifier {
@@ -26,8 +26,9 @@ class AppointmentManager extends ChangeNotifier {
       if (response.data['success']) {
         final data = response.data['data'];
         final allAppointments = (data['appointments'] as List?)?.map((a) {
-          return AppointmentModel.fromJson(a);
-        }).toList() ?? [];
+              return AppointmentModel.fromJson(a);
+            }).toList() ??
+            [];
 
         if (status == 'pending') {
           pendingConfirmations = allAppointments;

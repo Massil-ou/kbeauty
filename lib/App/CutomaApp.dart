@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'App/Manager.dart';
-import 'Offre/OffreView.dart';
-import 'Dashboard/Services/ServiceDetailView.dart';
-import 'Booking/TimeSlotPickerView.dart';
-import 'Booking/ConfirmBookingView.dart';
-import 'Dashboard/Appointments/MyAppointmentsView.dart';
-import 'Dashboard/Appointments/BeauticianhDashboardView.dart';
-import 'Reviews/ReviewFormView.dart';
+import 'Manager.dart';
+import '../Offre/OffreView.dart';
+import '../Dashboard/Services/ServiceDetailView.dart';
+import '../Booking/TimeSlotPickerView.dart';
+import '../Booking/ConfirmBookingView.dart';
+import '../Dashboard/Appointments/MyAppointmentsView.dart';
+import '../Dashboard/Appointments/BeauticianhDashboardView.dart';
+import '../Reviews/ReviewFormView.dart';
 
 final RouteObserver<PageRoute<dynamic>> routeObserver =
     RouteObserver<PageRoute<dynamic>>();
@@ -51,17 +51,20 @@ class _KBeautyAppState extends State<KBeautyApp> {
       GoRoute(
         path: '/booking/confirm',
         name: 'confirm_booking',
-        builder: (context, state) => ConfirmBookingView(manager: widget.manager),
+        builder: (context, state) =>
+            ConfirmBookingView(manager: widget.manager),
       ),
       GoRoute(
         path: '/appointments',
         name: 'my_appointments',
-        builder: (context, state) => MyAppointmentsView(manager: widget.manager),
+        builder: (context, state) =>
+            MyAppointmentsView(manager: widget.manager),
       ),
       GoRoute(
         path: '/beautician/dashboard',
         name: 'beautician_dashboard',
-        builder: (context, state) => BeauticianhDashboardView(manager: widget.manager),
+        builder: (context, state) =>
+            BeauticianhDashboardView(manager: widget.manager),
       ),
       GoRoute(
         path: '/reviews/:appointment_id',

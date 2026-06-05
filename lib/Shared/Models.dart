@@ -37,11 +37,11 @@ class ServiceModel {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0,
-      durationMinutes: json['durationMinutes'] as int? ?? 60,
+      durationMinutes: (json['durationMinutes'] as num?)?.toInt() ?? 60,
       category: json['category'] ?? '',
       subcategory: json['subcategory'],
       rating: (json['rating'] as num?)?.toDouble() ?? 0,
-      reviewCount: json['reviewCount'] as int? ?? 0,
+      reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
       images: List<String>.from(json['images'] ?? []),
       beautician: BeauticianhProfileModel.fromJson(json['beautician'] ?? {}),
     );
@@ -86,7 +86,8 @@ class BookingModel {
       id: json['bookingId'] ?? '',
       serviceId: json['serviceId'] ?? '',
       beauticianhId: json['beauticianhId'] ?? '',
-      scheduledDateTime: DateTime.parse(json['scheduledDateTime'] ?? DateTime.now().toString()),
+      scheduledDateTime: DateTime.parse(
+          json['scheduledDateTime'] ?? DateTime.now().toString()),
       locationAddress: json['locationAddress'] ?? '',
       locationCity: json['locationCity'],
       locationWilaya: json['locationWilaya'],
@@ -99,19 +100,19 @@ class BookingModel {
   }
 
   Map<String, dynamic> toJson() => {
-    'bookingId': id,
-    'serviceId': serviceId,
-    'beauticianhId': beauticianhId,
-    'scheduledDateTime': scheduledDateTime.toIso8601String(),
-    'locationAddress': locationAddress,
-    'locationCity': locationCity,
-    'locationWilaya': locationWilaya,
-    'locationCommune': locationCommune,
-    'status': status,
-    'amount': totalAmount,
-    'paymentStatus': paymentStatus,
-    'stripeSessionId': stripeSessionId,
-  };
+        'bookingId': id,
+        'serviceId': serviceId,
+        'beauticianhId': beauticianhId,
+        'scheduledDateTime': scheduledDateTime.toIso8601String(),
+        'locationAddress': locationAddress,
+        'locationCity': locationCity,
+        'locationWilaya': locationWilaya,
+        'locationCommune': locationCommune,
+        'status': status,
+        'amount': totalAmount,
+        'paymentStatus': paymentStatus,
+        'stripeSessionId': stripeSessionId,
+      };
 }
 
 class AppointmentModel {
@@ -149,14 +150,17 @@ class AppointmentModel {
       bookingId: json['bookingId'] ?? '',
       serviceTitle: json['serviceTitle'] ?? '',
       servicePrice: (json['price'] as num?)?.toDouble() ?? 0,
-      scheduledDateTime: DateTime.parse(json['scheduledDateTime'] ?? DateTime.now().toString()),
-      durationMinutes: json['durationMinutes'] as int? ?? 60,
+      scheduledDateTime: DateTime.parse(
+          json['scheduledDateTime'] ?? DateTime.now().toString()),
+      durationMinutes: (json['durationMinutes'] as num?)?.toInt() ?? 60,
       locationAddress: json['location'] ?? '',
       status: json['status'] ?? 'pending_confirmation',
       beauticianhStatus: json['beauticianhStatus'] ?? 'pending_confirmation',
       clientNotes: json['clientNotes'],
       client: ClientProfileModel.fromJson(json['client'] ?? {}),
-      completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt']) : null,
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'])
+          : null,
     );
   }
 }
@@ -200,9 +204,9 @@ class BeauticianhProfileModel {
       email: json['email'] ?? '',
       bio: json['bio'],
       specializations: List<String>.from(json['specializations'] ?? []),
-      experienceYears: json['experienceYears'] as int? ?? 0,
+      experienceYears: (json['experienceYears'] as num?)?.toInt() ?? 0,
       rating: (json['rating'] as num?)?.toDouble() ?? 0,
-      appointmentCount: json['appointmentCount'] as int? ?? 0,
+      appointmentCount: (json['appointmentCount'] as num?)?.toInt() ?? 0,
       isVerified: json['isVerified'] as bool? ?? false,
     );
   }

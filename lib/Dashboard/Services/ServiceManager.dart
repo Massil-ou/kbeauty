@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../Shared/Models.dart';
-import 'Manager.dart';
+import '../../Shared/Models.dart';
+import '../../App/Manager.dart';
 
 /// ServiceManager handles searching and browsing beauty services
 class ServiceManager extends ChangeNotifier {
@@ -57,8 +57,9 @@ class ServiceManager extends ChangeNotifier {
 
         // Parse services
         final serviceList = (data['services'] as List?)?.map((s) {
-          return ServiceModel.fromJson(s);
-        }).toList() ?? [];
+              return ServiceModel.fromJson(s);
+            }).toList() ??
+            [];
 
         if (page == 1) {
           services = serviceList;

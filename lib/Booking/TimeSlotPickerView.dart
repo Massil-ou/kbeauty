@@ -99,7 +99,8 @@ class _TimeSlotPickerViewState extends State<TimeSlotPickerView> {
               const SizedBox(height: 12),
 
               if (_availabilityManager.isLoading)
-                const Center(child: Padding(
+                const Center(
+                    child: Padding(
                   padding: EdgeInsets.all(20),
                   child: CircularProgressIndicator(),
                 ))
@@ -108,7 +109,8 @@ class _TimeSlotPickerViewState extends State<TimeSlotPickerView> {
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Text(
-                      _availabilityManager.lastError ?? 'Aucun créneau disponible',
+                      _availabilityManager.lastError ??
+                          'Aucun créneau disponible',
                     ),
                   ),
                 )

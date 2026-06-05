@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../App/Manager.dart';
 
 class ConfirmBookingView extends StatefulWidget {
@@ -41,7 +40,8 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
                   children: [
                     const Text(
                       'Résumé',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -59,7 +59,9 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Durée:'),
-                        Text('60 min', style: const TextStyle(fontWeight: FontWeight.w600)),
+                        Text('60 min',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600)),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -189,24 +191,27 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
                           _bookingManager.clientNotes = _notesCtrl.text;
                           final booking = await _bookingManager.createBooking(
                             serviceId: _bookingManager.selectedServiceId!,
-                            beauticianhId: _bookingManager.selectedBeauticianhId!,
+                            beauticianhId:
+                                _bookingManager.selectedBeauticianhId!,
                             scheduledDate: _bookingManager.selectedDate!,
                             scheduledTime: _bookingManager.selectedTime!,
                             locationAddress: _addressCtrl.text,
-                            locationCity: _cityCtrl.text.isEmpty ? null : _cityCtrl.text,
-                            locationWilaya: _wilayaCtrl.text.isEmpty ? null : _wilayaCtrl.text,
+                            locationCity:
+                                _cityCtrl.text.isEmpty ? null : _cityCtrl.text,
+                            locationWilaya: _wilayaCtrl.text.isEmpty
+                                ? null
+                                : _wilayaCtrl.text,
                           );
 
-                          if (booking != null) {
-                            if (mounted) {
-                              // Go to payment
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Réservation créée! Procédez au paiement.'),
-                                ),
-                              );
-                              // TODO: Navigate to payment
-                            }
+                          if (booking != null && context.mounted) {
+                            // Go to payment
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Réservation créée! Procédez au paiement.'),
+                              ),
+                            );
+                            // TODO: Navigate to payment
                           }
                         },
                   child: _bookingManager.isSaving

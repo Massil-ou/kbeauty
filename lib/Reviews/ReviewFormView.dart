@@ -91,9 +91,10 @@ class _ReviewFormViewState extends State<ReviewFormView> {
                           _rating,
                           _commentCtrl.text.isEmpty ? null : _commentCtrl.text,
                         );
+                        if (!mounted) return;
                         setState(() => _isSubmitting = false);
 
-                        if (mounted) {
+                        if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Merci pour votre évaluation!'),

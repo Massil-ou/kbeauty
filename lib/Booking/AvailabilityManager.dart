@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../Shared/Models.dart';
-import 'Manager.dart';
+import '../App/Manager.dart';
 
 /// AvailabilityManager handles time slot management
 class AvailabilityManager extends ChangeNotifier {
@@ -29,8 +29,9 @@ class AvailabilityManager extends ChangeNotifier {
       if (response.data['success']) {
         final data = response.data['data'];
         slots = (data['slots'] as List?)?.map((s) {
-          return AvailabilitySlotModel.fromJson(s);
-        }).toList() ?? [];
+              return AvailabilitySlotModel.fromJson(s);
+            }).toList() ??
+            [];
         lastError = null;
       } else {
         lastError = response.data['message'];
