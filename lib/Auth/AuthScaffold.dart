@@ -55,6 +55,8 @@ class AuthScaffold extends StatelessWidget {
                           'assets/icons/kbeauty-icon.png',
                           width: 32,
                           height: 32,
+                          fit: BoxFit.contain,
+                          alignment: Alignment.center,
                         ),
                       ),
                       const SizedBox(width: 9),

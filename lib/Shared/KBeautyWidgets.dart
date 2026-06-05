@@ -54,6 +54,7 @@ class KBeautyHeader extends StatelessWidget implements PreferredSizeWidget {
                       width: 34,
                       height: 34,
                       fit: BoxFit.cover,
+                      alignment: Alignment.center,
                     ),
                   ),
                   const SizedBox(width: 9),
