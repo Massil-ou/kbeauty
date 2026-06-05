@@ -9,22 +9,24 @@ class KBeautyAccountMenu extends StatelessWidget {
 
   final Manager manager;
 
-  static Future<void> open(BuildContext context, Manager manager) =>
-      showGeneralDialog<void>(
-        context: context,
-        barrierDismissible: true,
-        barrierLabel: 'Fermer le menu',
-        barrierColor: Colors.black.withValues(alpha: 0.30),
-        transitionDuration: const Duration(milliseconds: 220),
-        pageBuilder: (_, __, ___) => KBeautyAccountMenu(manager: manager),
-        transitionBuilder: (_, animation, __, child) => SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(1, 0),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
-          child: child,
-        ),
-      );
+  static Future<void> open(BuildContext context, Manager manager) {
+    if (!manager.isAuthenticated) return Future.value();
+    return showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Fermer le menu',
+      barrierColor: Colors.black.withValues(alpha: 0.30),
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (_, __, ___) => KBeautyAccountMenu(manager: manager),
+      transitionBuilder: (_, animation, __, child) => SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+        child: child,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,26 +49,22 @@ class KBeautyAccountMenu extends StatelessWidget {
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    children: manager.isAuthenticated
-                        ? _authenticatedItems(context)
-                        : _publicItems(context),
+                    children: _authenticatedItems(context),
                   ),
                 ),
-                if (manager.isAuthenticated) ...[
-                  const Divider(height: 1),
-                  _item(
-                    context,
-                    icon: Icons.logout_rounded,
-                    label: 'Déconnexion',
-                    color: KBeautyTheme.danger,
-                    onTap: () async {
-                      Navigator.pop(context);
-                      await manager.authManager.logout();
-                      if (context.mounted) context.go('/');
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                ],
+                const Divider(height: 1),
+                _item(
+                  context,
+                  icon: Icons.logout_rounded,
+                  label: 'Déconnexion',
+                  color: KBeautyTheme.danger,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await manager.authManager.logout();
+                    if (context.mounted) context.go('/');
+                  },
+                ),
+                const SizedBox(height: 10),
               ],
             ),
           ),
@@ -89,12 +87,8 @@ class KBeautyAccountMenu extends StatelessWidget {
           CircleAvatar(
             radius: 25,
             backgroundColor: Colors.white,
-            child: Icon(
-              manager.isAuthenticated
-                  ? Icons.person_rounded
-                  : Icons.spa_rounded,
-              color: KBeautyTheme.primary,
-            ),
+            child:
+                const Icon(Icons.person_rounded, color: KBeautyTheme.primary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -102,11 +96,9 @@ class KBeautyAccountMenu extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  manager.isAuthenticated
-                      ? (manager.currentUserName.isEmpty
-                          ? 'Mon compte kBeauty'
-                          : manager.currentUserName)
-                      : 'Bienvenue sur kBeauty',
+                  manager.currentUserName.isEmpty
+                      ? 'Mon compte kBeauty'
+                      : manager.currentUserName,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 17,
@@ -115,9 +107,7 @@ class KBeautyAccountMenu extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  manager.isAuthenticated
-                      ? _roleLabel()
-                      : 'Réservez votre prochain soin',
+                  _roleLabel(),
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
@@ -131,28 +121,6 @@ class KBeautyAccountMenu extends StatelessWidget {
       ),
     );
   }
-
-  List<Widget> _publicItems(BuildContext context) => [
-        _section('Navigation'),
-        _item(
-          context,
-          icon: Icons.home_outlined,
-          label: 'Accueil',
-          onTap: () => _go(context, '/'),
-        ),
-        _item(
-          context,
-          icon: Icons.login_rounded,
-          label: 'Connexion',
-          onTap: () => _go(context, '/login'),
-        ),
-        _item(
-          context,
-          icon: Icons.person_add_alt_1_outlined,
-          label: 'Créer un compte',
-          onTap: () => _go(context, '/signup'),
-        ),
-      ];
 
   List<Widget> _authenticatedItems(BuildContext context) => [
         _section('Mon espace'),

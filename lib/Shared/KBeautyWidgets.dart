@@ -73,17 +73,14 @@ class KBeautyHeader extends StatelessWidget implements PreferredSizeWidget {
         ),
         actions: [
           ...actions,
-          if (MediaQuery.sizeOf(context).width >= 720)
-            ..._desktopActions(context)
-          else
-            _mobileMenu(context),
+          ..._accountActions(context),
           const SizedBox(width: 10),
         ],
       ),
     );
   }
 
-  List<Widget> _desktopActions(BuildContext context) {
+  List<Widget> _accountActions(BuildContext context) {
     if (!manager.isAuthenticated) {
       return [
         TextButton(
@@ -91,17 +88,22 @@ class KBeautyHeader extends StatelessWidget implements PreferredSizeWidget {
           child: const Text('Connexion'),
         ),
         const SizedBox(width: 4),
-        _menuButton(context),
+        ElevatedButton(
+          onPressed: () => context.go('/signup'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+          ),
+          child: const Text('Inscription'),
+        ),
       ];
     }
 
     return [
-      _menuButton(context, showLabel: true),
+      _menuButton(
+        context,
+        showLabel: MediaQuery.sizeOf(context).width >= 720,
+      ),
     ];
-  }
-
-  Widget _mobileMenu(BuildContext context) {
-    return _menuButton(context);
   }
 
   Widget _menuButton(BuildContext context, {bool showLabel = false}) {
