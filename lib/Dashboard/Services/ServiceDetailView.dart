@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../App/Manager.dart';
+import '../../Shared/KBeautyTheme.dart';
+import '../../Shared/KBeautyWidgets.dart';
 
 class ServiceDetailView extends StatefulWidget {
   const ServiceDetailView({
@@ -8,6 +11,7 @@ class ServiceDetailView extends StatefulWidget {
     required this.manager,
     required this.serviceId,
   });
+
   final Manager manager;
   final String serviceId;
 
@@ -25,220 +29,345 @@ class _ServiceDetailViewState extends State<ServiceDetailView> {
     _serviceManager.getServiceDetail(widget.serviceId);
   }
 
+  void _book() {
+    final service = _serviceManager.selectedService;
+    if (service == null) return;
+    if (!widget.manager.isAuthenticated) {
+      _showAuthRequired();
+      return;
+    }
+    context.pushNamed(
+      'time_slots',
+      pathParameters: {
+        'service_id': service.id,
+        'beautician_id': service.beautician.id,
+      },
+    );
+  }
+
+  Future<void> _showAuthRequired() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(
+          Icons.lock_outline_rounded,
+          color: KBeautyTheme.primary,
+          size: 32,
+        ),
+        title: const Text('Connectez-vous pour réserver'),
+        content: const Text(
+          'Votre compte permet de sécuriser la réservation et de suivre le rendez-vous.',
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          OutlinedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              this.context.go('/signup');
+            },
+            child: const Text('Inscription'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              this.context.go('/login');
+            },
+            child: const Text('Connexion'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Détails du service')),
-      body: ListenableBuilder(
-        listenable: _serviceManager,
-        builder: (context, _) {
-          if (_serviceManager.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return ListenableBuilder(
+      listenable: _serviceManager,
+      builder: (context, _) {
+        if (_serviceManager.isLoading) {
+          return KBeautyPage(
+            manager: widget.manager,
+            title: 'Détails',
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 120),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
 
-          if (_serviceManager.selectedService == null) {
-            return Center(
-                child: Text(_serviceManager.lastError ?? 'Service non trouvé'));
-          }
+        final service = _serviceManager.selectedService;
+        if (service == null) {
+          return KBeautyPage(
+            manager: widget.manager,
+            title: 'Détails',
+            child: KBeautyEmptyState(
+              icon: Icons.search_off_rounded,
+              title: 'Prestation introuvable',
+              message: _serviceManager.lastError ??
+                  'Cette prestation n’est plus disponible.',
+              action: ElevatedButton(
+                onPressed: () => context.go('/'),
+                child: const Text('Retour aux offres'),
+              ),
+            ),
+          );
+        }
 
-          final service = _serviceManager.selectedService!;
+        return KBeautyPage(
+          manager: widget.manager,
+          title: 'Détails de la prestation',
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 840;
+              final image = _imageGallery(service.images);
+              final details = _details();
+              if (wide) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 6, child: image),
+                    const SizedBox(width: 20),
+                    Expanded(flex: 5, child: details),
+                  ],
+                );
+              }
+              return Column(
+                children: [image, const SizedBox(height: 18), details],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
 
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Image Carousel
-                if (service.images.isNotEmpty)
-                  Stack(
-                    children: [
-                      PageView.builder(
-                        onPageChanged: (idx) =>
-                            setState(() => _currentImageIndex = idx),
-                        itemCount: service.images.length,
-                        itemBuilder: (_, idx) => Image.network(
-                          service.images[idx],
-                          fit: BoxFit.cover,
-                          height: 300,
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 12,
-                        left: 0,
-                        right: 0,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(
-                            service.images.length,
-                            (idx) => Container(
-                              width: 8,
-                              height: 8,
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: idx == _currentImageIndex
-                                    ? Colors.white
-                                    : Colors.white.withValues(alpha: 0.5),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+  Widget _imageGallery(List<String> images) {
+    return KBeautyCard(
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: SizedBox(
+          height: 460,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (images.isEmpty)
+                Container(
+                  color: KBeautyTheme.primarySoft,
+                  child: const Icon(
+                    Icons.spa_outlined,
+                    color: KBeautyTheme.primary,
+                    size: 70,
                   ),
+                )
+              else
+                PageView.builder(
+                  itemCount: images.length,
+                  onPageChanged: (index) {
+                    setState(() => _currentImageIndex = index);
+                  },
+                  itemBuilder: (_, index) => Image.network(
+                    images[index],
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: KBeautyTheme.primarySoft,
+                      child: const Icon(
+                        Icons.spa_outlined,
+                        color: KBeautyTheme.primary,
+                        size: 70,
+                      ),
+                    ),
+                  ),
+                ),
+              if (images.length > 1)
+                Positioned(
+                  bottom: 14,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      images.length,
+                      (index) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        width: index == _currentImageIndex ? 22 : 8,
+                        height: 8,
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        decoration: BoxDecoration(
+                          color: index == _currentImageIndex
+                              ? Colors.white
+                              : Colors.white60,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title & Price
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              service.title,
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
+  Widget _details() {
+    final service = _serviceManager.selectedService!;
+    return Column(
+      children: [
+        KBeautyCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  KBeautyStatusChip(
+                    label: service.category,
+                    color: KBeautyTheme.primary,
+                  ),
+                  KBeautyStatusChip(
+                    label: '${service.durationMinutes} min',
+                    color: KBeautyTheme.lilac,
+                    icon: Icons.schedule_rounded,
+                  ),
+                  KBeautyStatusChip(
+                    label: '${service.rating.toStringAsFixed(1)} / 5',
+                    color: KBeautyTheme.gold,
+                    icon: Icons.star,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                service.title,
+                style: const TextStyle(
+                  color: KBeautyTheme.text,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.6,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                service.description,
+                style: const TextStyle(
+                  color: KBeautyTheme.muted,
+                  fontSize: 14,
+                  height: 1.55,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Text(
+                    '${service.price.toStringAsFixed(0)} €',
+                    style: const TextStyle(
+                      color: KBeautyTheme.primary,
+                      fontSize: 27,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${service.reviewCount} avis',
+                    style: const TextStyle(color: KBeautyTheme.muted),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _book,
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  label: const Text('Réserver un rendez-vous'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        KBeautyCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const KBeautySectionTitle(
+                title: 'Votre professionnelle',
+                subtitle: 'Profil vérifié et évalué par la communauté.',
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: const BoxDecoration(
+                      color: KBeautyTheme.primarySoft,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.person_outline,
+                      color: KBeautyTheme.primary,
+                      size: 27,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                service.beautician.fullName,
+                                style: const TextStyle(
+                                  color: KBeautyTheme.text,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                ),
                               ),
                             ),
-                          ),
-                          Text(
-                            '€${service.price.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF7C3AED),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Duration
-                      Text(
-                        'Durée: ${service.durationMinutes} minutes',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Description
-                      Text(
-                        service.description,
-                        style: const TextStyle(height: 1.6),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Beautician Card
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Beauticienne',
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: const Color(0xFF7C3AED),
-                                  ),
-                                  child: const Icon(Icons.person,
-                                      color: Colors.white),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        service.beautician.fullName,
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.w700),
-                                      ),
-                                      Row(
-                                        children: [
-                                          Icon(Icons.star,
-                                              size: 14, color: Colors.amber),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '${service.beautician.rating.toStringAsFixed(1)} (${service.beautician.appointmentCount})',
-                                            style:
-                                                const TextStyle(fontSize: 12),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (service.beautician.bio != null) ...[
-                              const SizedBox(height: 12),
-                              Text(
-                                service.beautician.bio!,
-                                style: TextStyle(
-                                    color: Colors.grey[600], fontSize: 13),
+                            if (service.beautician.isVerified) ...[
+                              const SizedBox(width: 5),
+                              const Icon(
+                                Icons.verified,
+                                color: KBeautyTheme.primary,
+                                size: 17,
                               ),
                             ],
                           ],
                         ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Reviews
-                      if (service.images.isNotEmpty)
+                        const SizedBox(height: 4),
                         Text(
-                          'Avis (${service.images.length})',
+                          '${service.beautician.experienceYears} ans d’expérience • ${service.beautician.appointmentCount} rendez-vous',
                           style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            color: KBeautyTheme.muted,
+                            fontSize: 12,
                           ),
                         ),
-
-                      const SizedBox(height: 16),
-
-                      // Book Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            context.pushNamed(
-                              'time_slots',
-                              pathParameters: {
-                                'service_id': service.id,
-                                'beautician_id': service.beautician.id,
-                              },
-                            );
-                          },
-                          child: const Text('Réserver un rendez-vous'),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (service.beautician.bio?.isNotEmpty == true) ...[
+                const SizedBox(height: 14),
+                Text(
+                  service.beautician.bio!,
+                  style: const TextStyle(
+                    color: KBeautyTheme.muted,
+                    fontSize: 13,
+                    height: 1.5,
                   ),
                 ),
               ],
-            ),
-          );
-        },
-      ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

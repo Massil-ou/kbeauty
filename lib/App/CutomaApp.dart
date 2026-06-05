@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'Manager.dart';
-import '../Offre/OffreView.dart';
-import '../Dashboard/Services/ServiceDetailView.dart';
-import '../Booking/TimeSlotPickerView.dart';
+
+import '../Auth/LoginView.dart';
+import '../Auth/SignupView.dart';
 import '../Booking/ConfirmBookingView.dart';
-import '../Dashboard/Appointments/MyAppointmentsView.dart';
+import '../Booking/TimeSlotPickerView.dart';
 import '../Dashboard/Appointments/BeauticianhDashboardView.dart';
+import '../Dashboard/Appointments/MyAppointmentsView.dart';
+import '../Dashboard/Services/ServiceDetailView.dart';
+import '../Dashboard/Services/AddServiceView.dart';
+import '../Offre/OffreView.dart';
 import '../Reviews/ReviewFormView.dart';
+import '../Shared/KBeautyTheme.dart';
+import 'Manager.dart';
 
 final RouteObserver<PageRoute<dynamic>> routeObserver =
     RouteObserver<PageRoute<dynamic>>();
 
 class KBeautyApp extends StatefulWidget {
   const KBeautyApp({super.key, required this.manager});
+
   final Manager manager;
 
   @override
@@ -24,12 +30,46 @@ class _KBeautyAppState extends State<KBeautyApp> {
   late final GoRouter _router = GoRouter(
     debugLogDiagnostics: false,
     observers: [routeObserver],
+    refreshListenable: widget.manager,
     errorBuilder: (context, state) => OffreView(manager: widget.manager),
+    redirect: (context, state) {
+      final location = state.matchedLocation;
+      final authenticated = widget.manager.isAuthenticated;
+      final authRoute = location == '/login' || location == '/signup';
+      final protected = location == '/appointments' ||
+          location == '/booking/confirm' ||
+          location.startsWith('/reviews/') ||
+          location.startsWith('/beautician/');
+
+      if (!authenticated && protected) {
+        return '/login?redirect=${Uri.encodeComponent(state.uri.toString())}';
+      }
+      if (authenticated && authRoute) return '/';
+      if (location == '/beautician/dashboard' &&
+          !widget.manager.isBeauticianhRole) {
+        return '/appointments';
+      }
+      if (location == '/beautician/services/new' &&
+          !widget.manager.isBeauticianhRole) {
+        return '/appointments';
+      }
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/',
         name: 'home',
         builder: (context, state) => OffreView(manager: widget.manager),
+      ),
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => LoginView(manager: widget.manager),
+      ),
+      GoRoute(
+        path: '/signup',
+        name: 'signup',
+        builder: (context, state) => SignupView(manager: widget.manager),
       ),
       GoRoute(
         path: '/services/:id',
@@ -67,6 +107,11 @@ class _KBeautyAppState extends State<KBeautyApp> {
             BeauticianhDashboardView(manager: widget.manager),
       ),
       GoRoute(
+        path: '/beautician/services/new',
+        name: 'create_service',
+        builder: (context, state) => AddServiceView(manager: widget.manager),
+      ),
+      GoRoute(
         path: '/reviews/:appointment_id',
         name: 'write_review',
         builder: (context, state) => ReviewFormView(
@@ -83,39 +128,7 @@ class _KBeautyAppState extends State<KBeautyApp> {
       routerConfig: _router,
       debugShowCheckedModeBanner: false,
       title: 'kBeauty',
-      theme: ThemeData(
-        useMaterial3: false,
-        scaffoldBackgroundColor: Colors.white,
-        primaryColor: const Color(0xFF7C3AED), // Purple
-        colorScheme: const ColorScheme.light(
-          primary: Color(0xFF7C3AED),
-          secondary: Color(0xFF06B6D4), // Cyan
-          surface: Colors.white,
-          onPrimary: Colors.white,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF1F2937),
-          elevation: 0,
-          centerTitle: false,
-          titleTextStyle: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF1F2937),
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF7C3AED),
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-          ),
-        ),
-      ),
+      theme: KBeautyTheme.theme(),
     );
   }
 }

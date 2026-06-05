@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../App/Manager.dart';
+import '../Shared/KBeautyTheme.dart';
+import '../Shared/KBeautyWidgets.dart';
 
 class TimeSlotPickerView extends StatefulWidget {
   const TimeSlotPickerView({
@@ -9,6 +12,7 @@ class TimeSlotPickerView extends StatefulWidget {
     required this.serviceId,
     required this.beauticianhId,
   });
+
   final Manager manager;
   final String serviceId;
   final String beauticianhId;
@@ -20,8 +24,7 @@ class TimeSlotPickerView extends StatefulWidget {
 class _TimeSlotPickerViewState extends State<TimeSlotPickerView> {
   late final _bookingManager = widget.manager.bookingManager;
   late final _availabilityManager = widget.manager.availabilityManager;
-
-  DateTime? _selectedDate;
+  DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   String? _selectedTime;
 
   @override
@@ -29,160 +32,161 @@ class _TimeSlotPickerViewState extends State<TimeSlotPickerView> {
     super.initState();
     _bookingManager.selectedServiceId = widget.serviceId;
     _bookingManager.selectedBeauticianhId = widget.beauticianhId;
-    _selectedDate = DateTime.now().add(const Duration(days: 1));
     _loadSlots();
   }
 
+  String get _dateValue =>
+      '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+
   void _loadSlots() {
-    if (_selectedDate == null) return;
-    _availabilityManager.getSlots(
-      widget.beauticianhId,
-      '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
-      60,
+    _availabilityManager.getSlots(widget.beauticianhId, _dateValue, 60);
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
     );
+    if (picked == null) return;
+    setState(() {
+      _selectedDate = picked;
+      _selectedTime = null;
+    });
+    _loadSlots();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Choisir un créneau')),
-      body: ListenableBuilder(
-        listenable: Listenable.merge([_bookingManager, _availabilityManager]),
-        builder: (context, _) => SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Date Picker
-              const Text(
-                'Sélectionner une date',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(8),
+    return ListenableBuilder(
+      listenable: Listenable.merge([_bookingManager, _availabilityManager]),
+      builder: (context, _) => KBeautyPage(
+        manager: widget.manager,
+        title: 'Choisir un créneau',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const KBeautySectionTitle(
+              title: 'Planifiez votre rendez-vous',
+              subtitle:
+                  'Choisissez une date puis un créneau encore disponible.',
+            ),
+            const SizedBox(height: 18),
+            KBeautyCard(
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                onTap: _pickDate,
+                leading: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: KBeautyTheme.primarySoft,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.calendar_month_outlined,
+                    color: KBeautyTheme.primary,
+                  ),
                 ),
-                child: ListTile(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _selectedDate ?? DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 90)),
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        _selectedDate = picked;
-                        _selectedTime = null;
-                      });
-                      _loadSlots();
-                    }
-                  },
-                  title: Text(
-                    _selectedDate != null
-                        ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                        : 'Choisir une date',
+                title: const Text(
+                  'Date du rendez-vous',
+                  style: TextStyle(
+                    color: KBeautyTheme.muted,
+                    fontSize: 12,
                   ),
-                  trailing: const Icon(Icons.calendar_today),
+                ),
+                subtitle: Text(
+                  '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}',
+                  style: const TextStyle(
+                    color: KBeautyTheme.text,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                trailing: const Icon(
+                  Icons.edit_calendar_outlined,
+                  color: KBeautyTheme.primary,
                 ),
               ),
-
-              const SizedBox(height: 24),
-
-              // Time Slots
-              const Text(
-                'Créneaux disponibles',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 12),
-
-              if (_availabilityManager.isLoading)
-                const Center(
-                    child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: CircularProgressIndicator(),
-                ))
-              else if (_availabilityManager.slots.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      _availabilityManager.lastError ??
-                          'Aucun créneau disponible',
-                    ),
+            ),
+            const SizedBox(height: 18),
+            KBeautyCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const KBeautySectionTitle(
+                    title: 'Créneaux disponibles',
+                    subtitle: 'Les horaires grisés ne sont plus disponibles.',
                   ),
-                )
-              else
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                  ),
-                  itemCount: _availabilityManager.slots.length,
-                  itemBuilder: (_, idx) {
-                    final slot = _availabilityManager.slots[idx];
-                    final isSelected = _selectedTime == slot.time;
-                    return GestureDetector(
-                      onTap: slot.available
-                          ? () => setState(() => _selectedTime = slot.time)
-                          : null,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: slot.available
-                              ? isSelected
-                                  ? const Color(0xFF7C3AED)
-                                  : Colors.grey[100]
-                              : Colors.grey[200],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isSelected
-                                ? const Color(0xFF7C3AED)
-                                : Colors.transparent,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            slot.time,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: slot.available
-                                  ? isSelected
-                                      ? Colors.white
-                                      : Colors.black
-                                  : Colors.grey,
-                            ),
-                          ),
-                        ),
+                  const SizedBox(height: 18),
+                  if (_availabilityManager.isLoading)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(28),
+                        child: CircularProgressIndicator(),
                       ),
-                    );
-                  },
-                ),
-
-              const SizedBox(height: 32),
-
-              // Next Button
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _selectedTime != null
-                      ? () {
-                          _bookingManager.selectedDate =
-                              '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
-                          _bookingManager.selectedTime = _selectedTime;
-                          context.pushNamed('confirm_booking');
-                        }
-                      : null,
-                  child: const Text('Continuer'),
-                ),
+                    )
+                  else if (_availabilityManager.slots.isEmpty)
+                    KBeautyEmptyState(
+                      icon: Icons.event_busy_outlined,
+                      title: 'Aucun créneau ce jour',
+                      message: _availabilityManager.lastError ??
+                          'Sélectionnez une autre date pour continuer.',
+                      action: OutlinedButton(
+                        onPressed: _pickDate,
+                        child: const Text('Changer de date'),
+                      ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 9,
+                      runSpacing: 9,
+                      children: _availabilityManager.slots.map((slot) {
+                        final selected = _selectedTime == slot.time;
+                        return ChoiceChip(
+                          selected: selected,
+                          label: Text(slot.time),
+                          onSelected: slot.available
+                              ? (_) => setState(() => _selectedTime = slot.time)
+                              : null,
+                          selectedColor: KBeautyTheme.primary,
+                          backgroundColor: KBeautyTheme.primarySoft,
+                          disabledColor: KBeautyTheme.divider,
+                          labelStyle: TextStyle(
+                            color: selected
+                                ? Colors.white
+                                : slot.available
+                                    ? KBeautyTheme.primaryDark
+                                    : KBeautyTheme.muted,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _selectedTime == null
+                    ? null
+                    : () {
+                        _bookingManager.selectedDate = _dateValue;
+                        _bookingManager.selectedTime = _selectedTime;
+                        context.pushNamed('confirm_booking');
+                      },
+                icon: const Icon(Icons.arrow_forward_rounded),
+                label: const Text('Continuer vers la réservation'),
+              ),
+            ),
+          ],
         ),
       ),
     );

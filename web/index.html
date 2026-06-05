@@ -31,8 +31,70 @@
 
   <title>kBeauty - Services de beauté à domicile</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: #fff9fb;
+    }
+    #kbeauty-loading {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(217, 134, 169, .32), transparent 34%),
+        radial-gradient(circle at 80% 75%, rgba(139, 92, 246, .20), transparent 34%),
+        #fff9fb;
+      font-family: Arial, sans-serif;
+      color: #702344;
+      transition: opacity .25s ease;
+    }
+    .kbeauty-loading-card {
+      display: grid;
+      justify-items: center;
+      gap: 14px;
+      padding: 28px 34px;
+      border: 1px solid #f0dfe7;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, .88);
+      box-shadow: 0 18px 50px rgba(112, 35, 68, .12);
+    }
+    .kbeauty-loading-card img {
+      width: 58px;
+      height: 58px;
+      border-radius: 15px;
+    }
+    .kbeauty-loading-card strong {
+      font-size: 22px;
+    }
+    .kbeauty-spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid #f3d9e5;
+      border-top-color: #b34874;
+      border-radius: 50%;
+      animation: kbeauty-spin .8s linear infinite;
+    }
+    @keyframes kbeauty-spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
+  <div id="kbeauty-loading">
+    <div class="kbeauty-loading-card">
+      <img src="icons/Icon-192.png" alt="">
+      <strong>kBeauty</strong>
+      <div class="kbeauty-spinner"></div>
+    </div>
+  </div>
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      const loading = document.getElementById('kbeauty-loading');
+      if (!loading) return;
+      loading.style.opacity = '0';
+      setTimeout(() => loading.remove(), 250);
+    });
+  </script>
 </body>
 </html>

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../App/Manager.dart';
+import '../../Shared/KBeautyTheme.dart';
+import '../../Shared/KBeautyWidgets.dart';
 import '../../Shared/Models.dart';
 
 class BeauticianhDashboardView extends StatefulWidget {
   const BeauticianhDashboardView({super.key, required this.manager});
+
   final Manager manager;
 
   @override
@@ -18,186 +23,193 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
   @override
   void initState() {
     super.initState();
-    _appointmentManager.listAppointments(status: 'pending');
-    _profileManager.getProfile();
+    _load();
+  }
+
+  Future<void> _load() async {
+    await _profileManager.getProfile();
+    await _appointmentManager.listAppointments(status: 'pending');
+    await _appointmentManager.listAppointments();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mon dashboard')),
-      body: ListenableBuilder(
-        listenable: Listenable.merge([_appointmentManager, _profileManager]),
-        builder: (context, _) => SingleChildScrollView(
+    return ListenableBuilder(
+      listenable: Listenable.merge([_appointmentManager, _profileManager]),
+      builder: (context, _) {
+        final profile = _profileManager.profile;
+        final confirmed = _appointmentManager.appointments
+            .where((item) => item.status == 'confirmed')
+            .toList();
+        return KBeautyPage(
+          manager: widget.manager,
+          title: 'Espace professionnelle',
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Stats
-              Container(
-                padding: const EdgeInsets.all(16),
-                color: const Color(0xFF7C3AED),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Aperçu',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _StatBox(
-                            title: 'En attente',
-                            value:
-                                '${_appointmentManager.pendingConfirmations.length}',
-                            icon: Icons.hourglass_top,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _StatBox(
-                            title: 'Confirmés',
-                            value:
-                                '${_appointmentManager.appointments.where((a) => a.status == 'confirmed').length}',
-                            icon: Icons.check_circle,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+              _welcome(profile?.fullName),
+              const SizedBox(height: 14),
+              Align(
+                alignment: Alignment.centerRight,
+                child: ElevatedButton.icon(
+                  onPressed: () => context.go('/beautician/services/new'),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Publier une prestation'),
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              // Pending Confirmations
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'En attente de confirmation',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${_appointmentManager.pendingConfirmations.length}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
+              const SizedBox(height: 18),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final narrow = constraints.maxWidth < 650;
+                  final stats = [
+                    _StatCard(
+                      label: 'En attente',
+                      value:
+                          '${_appointmentManager.pendingConfirmations.length}',
+                      icon: Icons.hourglass_top_rounded,
+                      color: KBeautyTheme.gold,
                     ),
-                    const SizedBox(height: 12),
-                    if (_appointmentManager.pendingConfirmations.isEmpty)
-                      Text(
-                        'Aucune demande en attente',
-                        style: TextStyle(color: Colors.grey[600]),
-                      )
-                    else
-                      Column(
-                        children: _appointmentManager.pendingConfirmations
-                            .map((apt) => _PendingAppointmentCard(
-                                  appointment: apt,
-                                  onConfirm: () async {
-                                    await _appointmentManager
-                                        .confirmAppointment(apt.id);
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content:
-                                              Text('Rendez-vous confirmé!'),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  onDecline: () {
-                                    _showDeclineDialog(context, apt.id);
-                                  },
-                                ))
-                            .toList(),
-                      ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Upcoming Appointments
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Rendez-vous confirmés',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    _StatCard(
+                      label: 'Confirmés',
+                      value: '${confirmed.length}',
+                      icon: Icons.event_available_outlined,
+                      color: KBeautyTheme.success,
                     ),
-                    const SizedBox(height: 12),
-                    if (_appointmentManager.appointments.isEmpty)
-                      Text(
-                        'Aucun rendez-vous confirmé',
-                        style: TextStyle(color: Colors.grey[600]),
-                      )
-                    else
-                      Column(
-                        children: _appointmentManager.appointments
-                            .where((a) => a.status == 'confirmed')
-                            .map((apt) =>
-                                _UpcomingAppointmentCard(appointment: apt))
-                            .toList(),
-                      ),
-                  ],
-                ),
+                    _StatCard(
+                      label: 'Note moyenne',
+                      value: (profile?.rating ?? 0).toStringAsFixed(1),
+                      icon: Icons.star_outline_rounded,
+                      color: KBeautyTheme.lilac,
+                    ),
+                  ];
+                  return narrow
+                      ? Column(
+                          children: [
+                            for (final stat in stats) ...[
+                              stat,
+                              const SizedBox(height: 10),
+                            ],
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            for (var i = 0; i < stats.length; i++) ...[
+                              Expanded(child: stats[i]),
+                              if (i < stats.length - 1)
+                                const SizedBox(width: 12),
+                            ],
+                          ],
+                        );
+                },
               ),
-
-              const SizedBox(height: 20),
+              const SizedBox(height: 26),
+              KBeautySectionTitle(
+                title: 'Demandes à confirmer',
+                subtitle:
+                    '${_appointmentManager.pendingConfirmations.length} demande(s) en attente de votre réponse.',
+              ),
+              const SizedBox(height: 14),
+              if (_appointmentManager.pendingConfirmations.isEmpty)
+                const KBeautyEmptyState(
+                  icon: Icons.inbox_outlined,
+                  title: 'Aucune demande en attente',
+                  message: 'Les nouvelles réservations apparaîtront ici.',
+                )
+              else
+                ..._appointmentManager.pendingConfirmations.map(
+                  (appointment) => _RequestCard(
+                    appointment: appointment,
+                    onConfirm: () => _confirm(appointment.id),
+                    onDecline: () => _decline(appointment.id),
+                  ),
+                ),
+              const SizedBox(height: 26),
+              KBeautySectionTitle(
+                title: 'Prochains rendez-vous',
+                subtitle: '${confirmed.length} rendez-vous confirmé(s).',
+              ),
+              const SizedBox(height: 14),
+              if (confirmed.isEmpty)
+                const KBeautyEmptyState(
+                  icon: Icons.calendar_today_outlined,
+                  title: 'Aucun rendez-vous confirmé',
+                  message: 'Les rendez-vous acceptés seront affichés ici.',
+                )
+              else
+                ...confirmed.map((appointment) => _ConfirmedCard(appointment)),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Widget _welcome(String? name) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [KBeautyTheme.primaryDark, KBeautyTheme.primary],
         ),
+        borderRadius: BorderRadius.circular(24),
+        image: const DecorationImage(
+          image: AssetImage('assets/images/back.png'),
+          fit: BoxFit.cover,
+          opacity: 0.12,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const KBeautyStatusChip(
+            label: 'Espace professionnelle',
+            color: Colors.white,
+            icon: Icons.verified_outlined,
+          ),
+          const SizedBox(height: 15),
+          Text(
+            name?.trim().isNotEmpty == true
+                ? 'Bonjour $name'
+                : 'Bonjour ${widget.manager.currentUserName}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 7),
+          const Text(
+            'Gérez vos demandes et préparez sereinement vos prochains rendez-vous.',
+            style: TextStyle(color: Colors.white70, height: 1.45),
+          ),
+        ],
       ),
     );
   }
 
-  void _showDeclineDialog(BuildContext context, String appointmentId) {
-    final reasonCtrl = TextEditingController();
-    showDialog(
+  Future<void> _confirm(String appointmentId) async {
+    await _appointmentManager.confirmAppointment(appointmentId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Rendez-vous confirmé.')),
+      );
+    }
+  }
+
+  Future<void> _decline(String appointmentId) async {
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Décliner le rendez-vous'),
         content: TextField(
-          controller: reasonCtrl,
-          decoration: const InputDecoration(
-            labelText: 'Raison (optionnel)',
-            border: OutlineInputBorder(),
-          ),
+          controller: controller,
           maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Motif',
+            alignLabelWithHint: true,
+          ),
         ),
         actions: [
           TextButton(
@@ -205,65 +217,68 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
             child: const Text('Annuler'),
           ),
           ElevatedButton(
-            onPressed: () async {
-              await _appointmentManager.declineAppointment(
-                appointmentId,
-                reasonCtrl.text,
-              );
-              if (context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Rendez-vous décliné')),
-                );
-              }
-            },
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: KBeautyTheme.danger,
+            ),
             child: const Text('Décliner'),
           ),
         ],
       ),
     );
+    controller.dispose();
+    if (reason == null) return;
+    await _appointmentManager.declineAppointment(appointmentId, reason);
   }
 }
 
-class _StatBox extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-
-  const _StatBox({
-    required this.title,
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.label,
     required this.value,
     required this.icon,
+    required this.color,
   });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return KBeautyCard(
+      child: Row(
         children: [
-          Icon(icon, color: Colors.white, size: 20),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
             ),
+            child: Icon(icon, color: color),
           ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white,
-            ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  color: KBeautyTheme.text,
+                  fontSize: 23,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: KBeautyTheme.muted,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -271,85 +286,49 @@ class _StatBox extends StatelessWidget {
   }
 }
 
-class _PendingAppointmentCard extends StatelessWidget {
-  final AppointmentModel appointment;
-  final VoidCallback onConfirm;
-  final VoidCallback onDecline;
-
-  const _PendingAppointmentCard({
+class _RequestCard extends StatelessWidget {
+  const _RequestCard({
     required this.appointment,
     required this.onConfirm,
     required this.onDecline,
   });
 
+  final AppointmentModel appointment;
+  final VoidCallback onConfirm;
+  final VoidCallback onDecline;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return KBeautyCard(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.orange[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange[200]!),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.orange,
-                ),
-                child: const Icon(Icons.person, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      appointment.client.fullName,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    Text(
-                      appointment.serviceTitle,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          _AppointmentHeader(
+            appointment: appointment,
+            status: const KBeautyStatusChip(
+              label: 'À confirmer',
+              color: KBeautyTheme.gold,
+            ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            '${appointment.scheduledDateTime.day}/${appointment.scheduledDateTime.month} à ${appointment.scheduledDateTime.hour.toString().padLeft(2, '0')}:${appointment.scheduledDateTime.minute.toString().padLeft(2, '0')} - ${appointment.durationMinutes} min',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 15),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
                   onPressed: onDecline,
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.red),
+                    foregroundColor: KBeautyTheme.danger,
                   ),
-                  child: const Text(
-                    'Décliner',
-                    style: TextStyle(color: Colors.red),
-                  ),
+                  child: const Text('Décliner'),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton(
                   onPressed: onConfirm,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: KBeautyTheme.success,
                   ),
                   child: const Text('Confirmer'),
                 ),
@@ -362,56 +341,82 @@ class _PendingAppointmentCard extends StatelessWidget {
   }
 }
 
-class _UpcomingAppointmentCard extends StatelessWidget {
-  final AppointmentModel appointment;
+class _ConfirmedCard extends StatelessWidget {
+  const _ConfirmedCard(this.appointment);
 
-  const _UpcomingAppointmentCard({required this.appointment});
+  final AppointmentModel appointment;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return KBeautyCard(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.green[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green[200]!),
+      child: _AppointmentHeader(
+        appointment: appointment,
+        status: const KBeautyStatusChip(
+          label: 'Confirmé',
+          color: KBeautyTheme.success,
+        ),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.green,
-            ),
-            child: const Icon(Icons.person, color: Colors.white),
+    );
+  }
+}
+
+class _AppointmentHeader extends StatelessWidget {
+  const _AppointmentHeader({required this.appointment, required this.status});
+
+  final AppointmentModel appointment;
+  final Widget status;
+
+  @override
+  Widget build(BuildContext context) {
+    final date = appointment.scheduledDateTime;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: const BoxDecoration(
+            color: KBeautyTheme.primarySoft,
+            shape: BoxShape.circle,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  appointment.client.fullName,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+          child: const Icon(Icons.person_outline, color: KBeautyTheme.primary),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appointment.client.fullName,
+                style: const TextStyle(
+                  color: KBeautyTheme.text,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
                 ),
-                Text(
-                  appointment.serviceTitle,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                appointment.serviceTitle,
+                style: const TextStyle(
+                  color: KBeautyTheme.muted,
+                  fontSize: 12,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${appointment.scheduledDateTime.day}/${appointment.scheduledDateTime.month} à ${appointment.scheduledDateTime.hour.toString().padLeft(2, '0')}:${appointment.scheduledDateTime.minute.toString().padLeft(2, '0')}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')} à ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} • ${appointment.durationMinutes} min',
+                style: const TextStyle(
+                  color: KBeautyTheme.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Icon(Icons.check_circle, color: Colors.green, size: 24),
-        ],
-      ),
+        ),
+        status,
+      ],
     );
   }
 }

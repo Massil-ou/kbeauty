@@ -1,41 +1,142 @@
-import 'package:flutter/foundation.dart';
-import 'package:dio/dio.dart';
+import 'dart:convert';
 
-// Managers (lazy-initialized)
-import '../Dashboard/Services/ServiceManager.dart';
-import '../Booking/BookingManager.dart';
-import '../Booking/AvailabilityManager.dart';
+import 'package:crypto/crypto.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+
 import '../Appointments/AppointmentManager.dart';
+import '../Auth/AuthManager.dart';
 import '../BeauticianhProfile/BeauticianhProfileManager.dart';
+import '../Booking/AvailabilityManager.dart';
+import '../Booking/BookingManager.dart';
+import '../Dashboard/Services/ServiceManager.dart';
 import '../Reviews/ReviewManager.dart';
 
-/// Central Manager for kBeauty app
-/// Reuses authentication from Cutoma via shared HelperService
 class Manager extends ChangeNotifier {
   static Manager? _instance;
 
-  /// Singleton factory
-  factory Manager() {
-    _instance ??= Manager._internal();
-    return _instance!;
-  }
+  factory Manager() => _instance ??= Manager._internal();
 
   Manager._internal();
 
+  static const _deviceMacKeyB64 =
+      'xK9mP2vQs7nL4wRj8tYu3oZeHgBf6cDi1aWx5kNpMqA=';
+
+  static const _accessKey = 'kbeauty_access';
+  static const _refreshKey = 'kbeauty_refresh';
+  static const _userIdKey = 'kbeauty_user_id';
+  static const _roleKey = 'kbeauty_user_role';
+  static const _firstNameKey = 'kbeauty_first_name';
+  static const _lastNameKey = 'kbeauty_last_name';
+  static const _emailKey = 'kbeauty_email';
+  static const _deviceIdKey = 'kbeauty_device_id';
+
+  SharedPreferences? _preferences;
   String? _accessToken = const String.fromEnvironment('ACCESS_TOKEN').trim();
-  String? _deviceToken = const String.fromEnvironment('DEVICE_TOKEN').trim();
+  String? _refreshToken;
+  String? _deviceHeader = const String.fromEnvironment('DEVICE_TOKEN').trim();
+  String? _rawDeviceId;
   String? _currentUserId = const String.fromEnvironment('USER_ID').trim();
   String? _currentUserRole = const String.fromEnvironment('USER_ROLE').trim();
-
-  // =========================================================================
-  // AUTHENTICATION STATE (from Cutoma)
-  // =========================================================================
+  String _currentFirstName = '';
+  String _currentLastName = '';
+  String _currentEmail = '';
 
   bool get isAuthenticated =>
-      _accessToken?.isNotEmpty == true && _deviceToken?.isNotEmpty == true;
+      _accessToken?.isNotEmpty == true && _deviceHeader?.isNotEmpty == true;
   String? get currentUserId => _currentUserId;
-  bool get isClientRole => _currentUserRole == 'client';
-  bool get isBeauticianhRole => _currentUserRole == 'beautician';
+  String get currentUserRole => (_currentUserRole ?? '').toLowerCase().trim();
+  String get currentUserEmail => _currentEmail;
+  String get currentUserName => '$_currentFirstName $_currentLastName'.trim();
+  String? get refreshToken => _refreshToken;
+  bool get isClientRole => currentUserRole == 'client';
+  bool get isAdminRole => currentUserRole == 'admin';
+  bool get isBeauticianhRole =>
+      currentUserRole == 'beautician' ||
+      currentUserRole == 'partner' ||
+      currentUserRole == 'manager';
+
+  Future<void> bootstrap() async {
+    _preferences = await SharedPreferences.getInstance();
+    _rawDeviceId = _preferences!.getString(_deviceIdKey);
+    if (_rawDeviceId?.isNotEmpty != true) {
+      _rawDeviceId = const Uuid().v4();
+      await _preferences!.setString(_deviceIdKey, _rawDeviceId!);
+    }
+    _deviceHeader = _createDeviceHeader(_rawDeviceId!);
+
+    _accessToken = _preferences!.getString(_accessKey) ?? _accessToken;
+    _refreshToken = _preferences!.getString(_refreshKey);
+    _currentUserId = _preferences!.getString(_userIdKey) ?? _currentUserId;
+    _currentUserRole = _preferences!.getString(_roleKey) ?? _currentUserRole;
+    _currentFirstName = _preferences!.getString(_firstNameKey) ?? '';
+    _currentLastName = _preferences!.getString(_lastNameKey) ?? '';
+    _currentEmail = _preferences!.getString(_emailKey) ?? '';
+
+    if (_refreshToken?.isNotEmpty == true) {
+      await authManager.autoLogin();
+    }
+    notifyListeners();
+  }
+
+  String _createDeviceHeader(String deviceId) {
+    final now = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
+    final exp = now + 86400;
+    final payload = '$deviceId|$now|$exp';
+    final key = base64Decode(_deviceMacKeyB64);
+    final mac = Hmac(sha256, key).convert(utf8.encode(payload)).bytes;
+    return base64Encode(
+      utf8.encode(
+        jsonEncode({
+          'device_id': deviceId,
+          'iat': now,
+          'exp': exp,
+          'mac': base64Encode(mac),
+        }),
+      ),
+    );
+  }
+
+  String _readUserIdFromAccessToken(String accessToken) {
+    try {
+      final parts = accessToken.split('.');
+      if (parts.length < 2) return '';
+      final normalized = base64Url.normalize(parts[1]);
+      final payload = jsonDecode(utf8.decode(base64Url.decode(normalized)));
+      if (payload is Map) return payload['sub']?.toString() ?? '';
+    } catch (_) {}
+    return '';
+  }
+
+  Future<void> saveSession(Map<String, dynamic> data) async {
+    final access = data['access_token']?.toString() ?? '';
+    final refresh = data['refresh_token']?.toString() ?? '';
+    final user = data['user'] is Map
+        ? Map<String, dynamic>.from(data['user'] as Map)
+        : <String, dynamic>{};
+
+    _accessToken = access;
+    _refreshToken = refresh;
+    _currentUserId = _readUserIdFromAccessToken(access);
+    _currentUserRole = user['role']?.toString() ?? 'client';
+    _currentFirstName = user['first_name']?.toString() ?? '';
+    _currentLastName = user['last_name']?.toString() ?? '';
+    _currentEmail = user['email']?.toString() ?? '';
+
+    final prefs = _preferences ?? await SharedPreferences.getInstance();
+    await Future.wait([
+      prefs.setString(_accessKey, _accessToken ?? ''),
+      prefs.setString(_refreshKey, _refreshToken ?? ''),
+      prefs.setString(_userIdKey, _currentUserId ?? ''),
+      prefs.setString(_roleKey, _currentUserRole ?? ''),
+      prefs.setString(_firstNameKey, _currentFirstName),
+      prefs.setString(_lastNameKey, _currentLastName),
+      prefs.setString(_emailKey, _currentEmail),
+    ]);
+    notifyListeners();
+  }
 
   void configureAuth({
     required String accessToken,
@@ -44,23 +145,36 @@ class Manager extends ChangeNotifier {
     required String role,
   }) {
     _accessToken = accessToken.trim();
-    _deviceToken = deviceToken.trim();
+    _deviceHeader = deviceToken.trim();
     _currentUserId = userId.trim();
     _currentUserRole = role.trim();
     notifyListeners();
   }
 
-  void clearAuth() {
+  Future<void> clearAuth() async {
     _accessToken = null;
-    _deviceToken = null;
+    _refreshToken = null;
     _currentUserId = null;
     _currentUserRole = null;
+    _currentFirstName = '';
+    _currentLastName = '';
+    _currentEmail = '';
+
+    final prefs = _preferences ?? await SharedPreferences.getInstance();
+    await Future.wait([
+      prefs.remove(_accessKey),
+      prefs.remove(_refreshKey),
+      prefs.remove(_userIdKey),
+      prefs.remove(_roleKey),
+      prefs.remove(_firstNameKey),
+      prefs.remove(_lastNameKey),
+      prefs.remove(_emailKey),
+    ]);
     notifyListeners();
   }
 
-  // =========================================================================
-  // LAZY-INITIALIZED MANAGERS
-  // =========================================================================
+  AuthManager? _authManager;
+  AuthManager get authManager => _authManager ??= AuthManager(this);
 
   ServiceManager? _serviceManager;
   ServiceManager get serviceManager => _serviceManager ??= ServiceManager(this);
@@ -83,10 +197,6 @@ class Manager extends ChangeNotifier {
   ReviewManager? _reviewManager;
   ReviewManager get reviewManager => _reviewManager ??= ReviewManager(this);
 
-  // =========================================================================
-  // NETWORK CONFIGURATION
-  // =========================================================================
-
   late final Dio dio = _createDio();
 
   Dio _createDio() {
@@ -94,31 +204,39 @@ class Manager extends ChangeNotifier {
       'API_BASE_URL',
       defaultValue: 'https://api.winycar.fr',
     );
-    final dio = Dio(BaseOptions(
-      baseUrl: apiBaseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      contentType: 'application/json',
-    ));
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
+    final instance = Dio(
+      BaseOptions(
+        baseUrl: apiBaseUrl,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        sendTimeout: const Duration(seconds: 30),
+        contentType: 'application/json',
+        validateStatus: (status) =>
+            status != null && status >= 200 && status < 600,
+      ),
+    );
+    instance.interceptors.add(
+      QueuedInterceptorsWrapper(
+        onRequest: (options, handler) async {
+          if (_deviceHeader?.isNotEmpty != true) {
+            _preferences ??= await SharedPreferences.getInstance();
+            _rawDeviceId = _preferences!.getString(_deviceIdKey);
+            if (_rawDeviceId?.isNotEmpty != true) {
+              _rawDeviceId = const Uuid().v4();
+              await _preferences!.setString(_deviceIdKey, _rawDeviceId!);
+            }
+            _deviceHeader = _createDeviceHeader(_rawDeviceId!);
+          }
+          options.headers['X-Device-Id'] = _deviceHeader;
           if (_accessToken?.isNotEmpty == true) {
             options.headers['Authorization'] = 'Bearer $_accessToken';
-          }
-          if (_deviceToken?.isNotEmpty == true) {
-            options.headers['X-Device-Id'] = _deviceToken;
           }
           handler.next(options);
         },
       ),
     );
-    return dio;
+    return instance;
   }
-
-  // =========================================================================
-  // API RESPONSE MODELS
-  // =========================================================================
 
   Future<T> apiCall<T>(
     String endpoint, {
@@ -126,25 +244,18 @@ class Manager extends ChangeNotifier {
     Map<String, dynamic>? data,
     String method = 'POST',
   }) async {
-    try {
-      Response response;
-
-      if (method == 'POST') {
-        response = await dio.post(endpoint, data: data);
-      } else if (method == 'GET') {
-        response = await dio.get(endpoint);
-      } else {
-        throw Exception('Unsupported method: $method');
-      }
-
-      final json = response.data as Map<String, dynamic>;
-      if (json['success'] != true) {
-        throw Exception(json['message'] ?? 'API Error');
-      }
-
-      return parser(json['data'] ?? {});
-    } catch (e) {
-      rethrow;
+    final Response response = method == 'GET'
+        ? await dio.get(endpoint)
+        : await dio.post(endpoint, data: data);
+    final json = response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : <String, dynamic>{};
+    if (json['success'] != true) {
+      throw Exception(json['message'] ?? 'Erreur API');
     }
+    final payload = json['data'] is Map
+        ? Map<String, dynamic>.from(json['data'] as Map)
+        : <String, dynamic>{};
+    return parser(payload);
   }
 }

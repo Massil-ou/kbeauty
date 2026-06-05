@@ -7,6 +7,7 @@ Future<void> main() async {
 
   // Create Manager singleton
   final manager = Manager();
+  await manager.bootstrap();
 
   runApp(KBeautyApp(manager: manager));
 }

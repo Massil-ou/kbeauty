@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../App/Manager.dart';
+import '../../Shared/KBeautyTheme.dart';
+import '../../Shared/KBeautyWidgets.dart';
 import '../../Shared/Models.dart';
 
 class MyAppointmentsView extends StatefulWidget {
   const MyAppointmentsView({super.key, required this.manager});
+
   final Manager manager;
 
   @override
@@ -23,104 +27,125 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mes rendez-vous')),
-      body: ListenableBuilder(
-        listenable: _appointmentManager,
-        builder: (context, _) => Column(
-          children: [
-            // Tabs
-            Container(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  _TabButton(
-                    label: 'À venir',
-                    isActive: _activeTab == 'upcoming',
-                    onTap: () => setState(() => _activeTab = 'upcoming'),
-                  ),
-                  const SizedBox(width: 8),
-                  _TabButton(
-                    label: 'Complétés',
-                    isActive: _activeTab == 'completed',
-                    onTap: () => setState(() => _activeTab = 'completed'),
-                  ),
-                ],
-              ),
-            ),
+    return ListenableBuilder(
+      listenable: _appointmentManager,
+      builder: (context, _) {
+        final appointments = _appointmentManager.appointments.where((item) {
+          if (_activeTab == 'completed') {
+            return item.status == 'completed' || item.status == 'cancelled';
+          }
+          return item.status != 'completed' && item.status != 'cancelled';
+        }).toList();
 
-            Expanded(
-              child: _appointmentManager.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _appointmentManager.appointments.isEmpty
-                      ? Center(
-                          child: Text(
-                            _appointmentManager.lastError ??
-                                'Aucun rendez-vous',
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(12),
-                          itemCount: _appointmentManager.appointments.length,
-                          itemBuilder: (_, idx) {
-                            final apt = _appointmentManager.appointments[idx];
-                            return _AppointmentCard(
-                              appointment: apt,
-                              onCancel: apt.status == 'pending_confirmation'
-                                  ? () {
-                                      // Show cancel dialog
-                                    }
-                                  : null,
-                              onReview: apt.status == 'completed'
-                                  ? () {
-                                      context.pushNamed(
-                                        'write_review',
-                                        pathParameters: {
-                                          'appointment_id': apt.id,
-                                        },
-                                      );
-                                    }
-                                  : null,
-                            );
-                          },
-                        ),
-            ),
-          ],
-        ),
-      ),
+        return KBeautyPage(
+          manager: widget.manager,
+          title: 'Mes rendez-vous',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const KBeautySectionTitle(
+                title: 'Mes rendez-vous',
+                subtitle:
+                    'Suivez vos demandes et retrouvez vos prestations passées.',
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: KBeautyTheme.softDecoration(radius: 16),
+                child: Row(
+                  children: [
+                    _TabButton(
+                      label: 'À venir',
+                      active: _activeTab == 'upcoming',
+                      onTap: () => setState(() => _activeTab = 'upcoming'),
+                    ),
+                    _TabButton(
+                      label: 'Historique',
+                      active: _activeTab == 'completed',
+                      onTap: () => setState(() => _activeTab = 'completed'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              if (_appointmentManager.isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 80),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (appointments.isEmpty)
+                KBeautyEmptyState(
+                  icon: Icons.calendar_today_outlined,
+                  title: 'Aucun rendez-vous',
+                  message: _appointmentManager.lastError ??
+                      'Vos rendez-vous apparaîtront ici après réservation.',
+                  action: ElevatedButton(
+                    onPressed: () => context.go('/'),
+                    child: const Text('Découvrir les prestations'),
+                  ),
+                )
+              else
+                ...appointments.map(
+                  (appointment) => _AppointmentCard(
+                    appointment: appointment,
+                    onReview: appointment.status == 'completed'
+                        ? () => context.pushNamed(
+                              'write_review',
+                              pathParameters: {
+                                'appointment_id': appointment.id,
+                              },
+                            )
+                        : null,
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
 class _TabButton extends StatelessWidget {
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
   const _TabButton({
     required this.label,
-    required this.isActive,
+    required this.active,
     required this.onTap,
   });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
+      child: InkWell(
         onTap: onTap,
-        child: Container(
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF7C3AED) : Colors.grey[200],
-            borderRadius: BorderRadius.circular(8),
+            color: active ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: KBeautyTheme.primaryDark.withValues(alpha: 0.08),
+                      blurRadius: 10,
+                    ),
+                  ]
+                : null,
           ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: isActive ? Colors.white : Colors.black,
-              ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: active ? KBeautyTheme.primary : KBeautyTheme.muted,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ),
@@ -130,62 +155,45 @@ class _TabButton extends StatelessWidget {
 }
 
 class _AppointmentCard extends StatelessWidget {
+  const _AppointmentCard({required this.appointment, this.onReview});
+
   final AppointmentModel appointment;
-  final VoidCallback? onCancel;
   final VoidCallback? onReview;
-
-  const _AppointmentCard({
-    required this.appointment,
-    this.onCancel,
-    this.onReview,
-  });
-
-  String _getStatusLabel(String status) {
-    switch (status) {
-      case 'pending_confirmation':
-        return 'En attente de confirmation';
-      case 'confirmed':
-        return 'Confirmé';
-      case 'completed':
-        return 'Complété';
-      case 'cancelled':
-        return 'Annulé';
-      default:
-        return status;
-    }
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'pending_confirmation':
-        return Colors.orange;
-      case 'confirmed':
-        return Colors.green;
-      case 'completed':
-        return Colors.grey;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
+    final color = switch (appointment.status) {
+      'confirmed' => KBeautyTheme.success,
+      'completed' => KBeautyTheme.lilac,
+      'cancelled' => KBeautyTheme.danger,
+      _ => KBeautyTheme.gold,
+    };
+    final label = switch (appointment.status) {
+      'confirmed' => 'Confirmé',
+      'completed' => 'Complété',
+      'cancelled' => 'Annulé',
+      _ => 'En attente',
+    };
+    final date = appointment.scheduledDateTime;
+
+    return KBeautyCard(
+      margin: const EdgeInsets.only(bottom: 13),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.spa_outlined, color: color),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,90 +201,80 @@ class _AppointmentCard extends StatelessWidget {
                     Text(
                       appointment.serviceTitle,
                       style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        color: KBeautyTheme.text,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       appointment.client.fullName,
-                      style: TextStyle(
+                      style: const TextStyle(
+                        color: KBeautyTheme.muted,
                         fontSize: 12,
-                        color: Colors.grey[600],
                       ),
                     ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(appointment.status)
-                      .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  _getStatusLabel(appointment.status),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: _getStatusColor(appointment.status),
-                  ),
-                ),
-              ),
+              KBeautyStatusChip(label: label, color: color),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
+          const Divider(height: 26),
+          Wrap(
+            spacing: 18,
+            runSpacing: 9,
             children: [
-              Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
-              const SizedBox(width: 6),
-              Text(
-                '${appointment.scheduledDateTime.day}/${appointment.scheduledDateTime.month}/${appointment.scheduledDateTime.year} à ${appointment.scheduledDateTime.hour.toString().padLeft(2, '0')}:${appointment.scheduledDateTime.minute.toString().padLeft(2, '0')}',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              _Info(
+                icon: Icons.calendar_month_outlined,
+                label:
+                    '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} à ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
+              ),
+              _Info(
+                icon: Icons.schedule_outlined,
+                label: '${appointment.durationMinutes} min',
+              ),
+              _Info(
+                icon: Icons.location_on_outlined,
+                label: appointment.locationAddress,
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  appointment.locationAddress,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+          if (onReview != null) ...[
+            const SizedBox(height: 15),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onReview,
+                icon: const Icon(Icons.star_outline_rounded),
+                label: const Text('Évaluer la prestation'),
               ),
-            ],
-          ),
-          if (onCancel != null || onReview != null) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                if (onCancel != null)
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: onCancel,
-                      child: const Text('Annuler'),
-                    ),
-                  ),
-                if (onReview != null) ...[
-                  if (onCancel != null) const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: onReview,
-                      child: const Text('Évaluer'),
-                    ),
-                  ),
-                ],
-              ],
             ),
           ],
         ],
       ),
+    );
+  }
+}
+
+class _Info extends StatelessWidget {
+  const _Info({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: KBeautyTheme.primary, size: 17),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(color: KBeautyTheme.muted, fontSize: 12),
+        ),
+      ],
     );
   }
 }

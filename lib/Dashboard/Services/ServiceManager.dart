@@ -15,6 +15,7 @@ class ServiceManager extends ChangeNotifier {
 
   List<ServiceModel> services = [];
   bool isLoading = false;
+  bool isSaving = false;
   bool hasMore = false;
   String? lastError;
 
@@ -130,5 +131,44 @@ class ServiceManager extends ChangeNotifier {
     _currentPage = 1;
     selectedService = null;
     notifyListeners();
+  }
+
+  Future<String?> createService({
+    required String title,
+    required String description,
+    required String category,
+    String? subcategory,
+    required double price,
+    required int durationMinutes,
+    List<String> images = const [],
+  }) async {
+    isSaving = true;
+    lastError = null;
+    notifyListeners();
+    try {
+      final response = await _manager.dio.post(
+        '/kbeauty/services/create',
+        data: {
+          'title': title,
+          'description': description,
+          'category': category,
+          'subcategory': subcategory,
+          'price': price,
+          'duration_minutes': durationMinutes,
+          'images': images,
+        },
+      );
+      if (response.data['success'] == true) {
+        await searchServices();
+        return response.data['data']['serviceId']?.toString();
+      }
+      lastError = response.data['message']?.toString();
+    } catch (e) {
+      lastError = e.toString();
+    } finally {
+      isSaving = false;
+      notifyListeners();
+    }
+    return null;
   }
 }

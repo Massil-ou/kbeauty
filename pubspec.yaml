@@ -16,6 +16,11 @@ dependencies:
   # Routing
   go_router: ^16.0.0
 
+  # Authentication session
+  crypto: ^3.0.3
+  shared_preferences: ^2.5.3
+  uuid: ^4.5.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -26,3 +31,9 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/icons/
+
+  fonts:
+    - family: Pacifico
+      fonts:
+        - asset: assets/fonts/Pacifico.ttf
