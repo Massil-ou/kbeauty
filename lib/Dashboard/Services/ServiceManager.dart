@@ -14,6 +14,7 @@ class ServiceManager extends ChangeNotifier {
   // =========================================================================
 
   List<ServiceModel> services = [];
+  List<ServiceModel> ownServices = [];
   bool isLoading = false;
   bool isSaving = false;
   bool hasMore = false;
@@ -170,5 +171,80 @@ class ServiceManager extends ChangeNotifier {
       notifyListeners();
     }
     return null;
+  }
+
+  Future<void> listMine() async {
+    isLoading = true;
+    lastError = null;
+    notifyListeners();
+    try {
+      final response = await _manager.dio.post('/kbeauty/services/mine');
+      if (response.data['success'] == true) {
+        ownServices = (response.data['data']['services'] as List? ?? [])
+            .whereType<Map>()
+            .map((item) =>
+                ServiceModel.fromJson(Map<String, dynamic>.from(item)))
+            .toList();
+      } else {
+        lastError = response.data['message']?.toString();
+      }
+    } catch (e) {
+      lastError = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateService({
+    required String id,
+    required String title,
+    required String description,
+    required String category,
+    String? subcategory,
+    required double price,
+    required int durationMinutes,
+    List<String> images = const [],
+  }) async {
+    return _saveAction('/kbeauty/services/update', {
+      'service_id': id,
+      'title': title,
+      'description': description,
+      'category': category,
+      'subcategory': subcategory,
+      'price': price,
+      'duration_minutes': durationMinutes,
+      'images': images,
+    });
+  }
+
+  Future<bool> toggleVisibility(ServiceModel service) =>
+      _saveAction('/kbeauty/services/toggle_visibility', {
+        'service_id': service.id,
+        'visible': !service.isVisible,
+      });
+
+  Future<bool> deleteService(String id) =>
+      _saveAction('/kbeauty/services/delete', {'service_id': id});
+
+  Future<bool> _saveAction(String endpoint, Map<String, dynamic> data) async {
+    isSaving = true;
+    lastError = null;
+    notifyListeners();
+    try {
+      final response = await _manager.dio.post(endpoint, data: data);
+      if (response.data['success'] == true) {
+        await listMine();
+        await searchServices();
+        return true;
+      }
+      lastError = response.data['message']?.toString();
+    } catch (e) {
+      lastError = e.toString();
+    } finally {
+      isSaving = false;
+      notifyListeners();
+    }
+    return false;
   }
 }

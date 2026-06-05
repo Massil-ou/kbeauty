@@ -16,6 +16,7 @@ class ServiceModel {
   final int reviewCount;
   final List<String> images;
   final BeauticianhProfileModel beautician;
+  final String status;
 
   ServiceModel({
     required this.id,
@@ -29,6 +30,7 @@ class ServiceModel {
     required this.reviewCount,
     required this.images,
     required this.beautician,
+    this.status = 'active',
   });
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
@@ -44,8 +46,11 @@ class ServiceModel {
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
       images: List<String>.from(json['images'] ?? []),
       beautician: BeauticianhProfileModel.fromJson(json['beautician'] ?? {}),
+      status: json['status']?.toString() ?? 'active',
     );
   }
+
+  bool get isVisible => status == 'active';
 }
 
 // ============================================================================
@@ -127,6 +132,7 @@ class AppointmentModel {
   final String beauticianhStatus;
   final String? clientNotes;
   final ClientProfileModel client;
+  final String beauticianName;
   final DateTime? completedAt;
 
   AppointmentModel({
@@ -141,6 +147,7 @@ class AppointmentModel {
     required this.beauticianhStatus,
     this.clientNotes,
     required this.client,
+    this.beauticianName = '',
     this.completedAt,
   });
 
@@ -158,6 +165,7 @@ class AppointmentModel {
       beauticianhStatus: json['beauticianhStatus'] ?? 'pending_confirmation',
       clientNotes: json['clientNotes'],
       client: ClientProfileModel.fromJson(json['client'] ?? {}),
+      beauticianName: json['beauticianName']?.toString() ?? '',
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'])
           : null,

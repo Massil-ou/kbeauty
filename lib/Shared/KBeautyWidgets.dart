@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../App/Manager.dart';
+import 'KBeautyAccountMenu.dart';
 import 'KBeautyTheme.dart';
 
 class KBeautyHeader extends StatelessWidget implements PreferredSizeWidget {
@@ -89,109 +90,32 @@ class KBeautyHeader extends StatelessWidget implements PreferredSizeWidget {
           onPressed: () => context.go('/login'),
           child: const Text('Connexion'),
         ),
-        const SizedBox(width: 6),
-        ElevatedButton(
-          onPressed: () => context.go('/signup'),
-          child: const Text('Inscription'),
-        ),
+        const SizedBox(width: 4),
+        _menuButton(context),
       ];
     }
 
     return [
-      TextButton.icon(
-        onPressed: () => context.go('/appointments'),
-        icon: const Icon(Icons.calendar_month_outlined, size: 19),
-        label: const Text('Mes rendez-vous'),
-      ),
-      if (manager.isBeauticianhRole)
-        TextButton.icon(
-          onPressed: () => context.go('/beautician/dashboard'),
-          icon: const Icon(Icons.space_dashboard_outlined, size: 19),
-          label: const Text('Espace pro'),
-        ),
-      const SizedBox(width: 4),
-      PopupMenuButton<String>(
-        tooltip: 'Mon compte',
-        onSelected: (value) => _handleMenu(context, value),
-        itemBuilder: (_) => _accountMenuItems(),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: KBeautyTheme.softDecoration(radius: 999),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.person_outline_rounded,
-                size: 19,
-                color: KBeautyTheme.primary,
-              ),
-              const SizedBox(width: 7),
-              Text(
-                manager.currentUserName.isEmpty
-                    ? 'Mon compte'
-                    : manager.currentUserName,
-                style: const TextStyle(
-                  color: KBeautyTheme.primaryDark,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      _menuButton(context, showLabel: true),
     ];
   }
 
   Widget _mobileMenu(BuildContext context) {
-    return PopupMenuButton<String>(
-      tooltip: 'Menu',
-      icon: const Icon(Icons.menu_rounded),
-      onSelected: (value) => _handleMenu(context, value),
-      itemBuilder: (_) => manager.isAuthenticated
-          ? _accountMenuItems()
-          : const [
-              PopupMenuItem(value: 'login', child: Text('Connexion')),
-              PopupMenuItem(value: 'signup', child: Text('Inscription')),
-            ],
-    );
+    return _menuButton(context);
   }
 
-  List<PopupMenuEntry<String>> _accountMenuItems() => [
-        const PopupMenuItem(value: 'home', child: Text('Accueil')),
-        const PopupMenuItem(
-          value: 'appointments',
-          child: Text('Mes rendez-vous'),
-        ),
-        if (manager.isBeauticianhRole)
-          const PopupMenuItem(
-            value: 'dashboard',
-            child: Text('Espace professionnelle'),
-          ),
-        const PopupMenuDivider(),
-        const PopupMenuItem(value: 'logout', child: Text('Déconnexion')),
-      ];
-
-  Future<void> _handleMenu(BuildContext context, String value) async {
-    switch (value) {
-      case 'login':
-        context.go('/login');
-        return;
-      case 'signup':
-        context.go('/signup');
-        return;
-      case 'appointments':
-        context.go('/appointments');
-        return;
-      case 'dashboard':
-        context.go('/beautician/dashboard');
-        return;
-      case 'logout':
-        await manager.authManager.logout();
-        if (context.mounted) context.go('/');
-        return;
-      default:
-        context.go('/');
-        return;
-    }
+  Widget _menuButton(BuildContext context, {bool showLabel = false}) {
+    return TextButton.icon(
+      onPressed: () => KBeautyAccountMenu.open(context, manager),
+      icon: const Icon(Icons.menu_rounded, size: 22),
+      label: showLabel
+          ? Text(
+              manager.currentUserName.isEmpty
+                  ? 'Menu'
+                  : manager.currentUserName,
+            )
+          : const SizedBox.shrink(),
+    );
   }
 }
 

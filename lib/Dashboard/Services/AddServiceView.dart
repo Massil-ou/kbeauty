@@ -245,7 +245,7 @@ class _AddServiceViewState extends State<AddServiceView> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Votre prestation est publiée.')),
     );
-    context.go('/beautician/dashboard');
+    context.go('/beautician/services');
   }
 
   String? _required(String? value) =>

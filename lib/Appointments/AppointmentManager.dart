@@ -85,4 +85,39 @@ class AppointmentManager extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  Future<bool> completeAppointment(String appointmentId) =>
+      _appointmentAction('/kbeauty/appointments/complete', appointmentId);
+
+  Future<bool> cancelAppointment(String appointmentId, String reason) =>
+      _appointmentAction(
+        '/kbeauty/appointments/cancel',
+        appointmentId,
+        reason: reason,
+      );
+
+  Future<bool> _appointmentAction(
+    String endpoint,
+    String appointmentId, {
+    String? reason,
+  }) async {
+    try {
+      final response = await _manager.dio.post(
+        endpoint,
+        data: {
+          'appointment_id': appointmentId,
+          if (reason != null) 'reason': reason
+        },
+      );
+      if (response.data['success'] == true) {
+        await listAppointments();
+        return true;
+      }
+      lastError = response.data['message']?.toString();
+    } catch (e) {
+      lastError = e.toString();
+    }
+    notifyListeners();
+    return false;
+  }
 }

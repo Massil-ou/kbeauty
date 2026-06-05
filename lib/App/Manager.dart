@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../Appointments/AppointmentManager.dart';
+import '../Account/AccountManager.dart';
+import '../Admin/AdminManager.dart';
 import '../Auth/AuthManager.dart';
 import '../BeauticianhProfile/BeauticianhProfileManager.dart';
 import '../Booking/AvailabilityManager.dart';
@@ -31,6 +33,7 @@ class Manager extends ChangeNotifier {
   static const _firstNameKey = 'kbeauty_first_name';
   static const _lastNameKey = 'kbeauty_last_name';
   static const _emailKey = 'kbeauty_email';
+  static const _phoneKey = 'kbeauty_phone';
   static const _deviceIdKey = 'kbeauty_device_id';
 
   SharedPreferences? _preferences;
@@ -43,12 +46,14 @@ class Manager extends ChangeNotifier {
   String _currentFirstName = '';
   String _currentLastName = '';
   String _currentEmail = '';
+  String _currentPhone = '';
 
   bool get isAuthenticated =>
       _accessToken?.isNotEmpty == true && _deviceHeader?.isNotEmpty == true;
   String? get currentUserId => _currentUserId;
   String get currentUserRole => (_currentUserRole ?? '').toLowerCase().trim();
   String get currentUserEmail => _currentEmail;
+  String get currentUserPhone => _currentPhone;
   String get currentUserName => '$_currentFirstName $_currentLastName'.trim();
   String? get refreshToken => _refreshToken;
   bool get isClientRole => currentUserRole == 'client';
@@ -57,6 +62,7 @@ class Manager extends ChangeNotifier {
       currentUserRole == 'beautician' ||
       currentUserRole == 'partner' ||
       currentUserRole == 'manager';
+  bool get isManagerRole => currentUserRole == 'manager';
 
   Future<void> bootstrap() async {
     _preferences = await SharedPreferences.getInstance();
@@ -74,6 +80,7 @@ class Manager extends ChangeNotifier {
     _currentFirstName = _preferences!.getString(_firstNameKey) ?? '';
     _currentLastName = _preferences!.getString(_lastNameKey) ?? '';
     _currentEmail = _preferences!.getString(_emailKey) ?? '';
+    _currentPhone = _preferences!.getString(_phoneKey) ?? '';
 
     if (_refreshToken?.isNotEmpty == true) {
       await authManager.autoLogin();
@@ -124,6 +131,7 @@ class Manager extends ChangeNotifier {
     _currentFirstName = user['first_name']?.toString() ?? '';
     _currentLastName = user['last_name']?.toString() ?? '';
     _currentEmail = user['email']?.toString() ?? '';
+    _currentPhone = user['number']?.toString() ?? '';
 
     final prefs = _preferences ?? await SharedPreferences.getInstance();
     await Future.wait([
@@ -134,6 +142,7 @@ class Manager extends ChangeNotifier {
       prefs.setString(_firstNameKey, _currentFirstName),
       prefs.setString(_lastNameKey, _currentLastName),
       prefs.setString(_emailKey, _currentEmail),
+      prefs.setString(_phoneKey, _currentPhone),
     ]);
     notifyListeners();
   }
@@ -159,6 +168,7 @@ class Manager extends ChangeNotifier {
     _currentFirstName = '';
     _currentLastName = '';
     _currentEmail = '';
+    _currentPhone = '';
 
     final prefs = _preferences ?? await SharedPreferences.getInstance();
     await Future.wait([
@@ -169,9 +179,33 @@ class Manager extends ChangeNotifier {
       prefs.remove(_firstNameKey),
       prefs.remove(_lastNameKey),
       prefs.remove(_emailKey),
+      prefs.remove(_phoneKey),
     ]);
     notifyListeners();
   }
+
+  Future<void> updateLocalProfile({
+    required String firstName,
+    required String lastName,
+    String? phone,
+  }) async {
+    _currentFirstName = firstName.trim();
+    _currentLastName = lastName.trim();
+    if (phone != null) _currentPhone = phone.trim();
+    final prefs = _preferences ?? await SharedPreferences.getInstance();
+    await Future.wait([
+      prefs.setString(_firstNameKey, _currentFirstName),
+      prefs.setString(_lastNameKey, _currentLastName),
+      prefs.setString(_phoneKey, _currentPhone),
+    ]);
+    notifyListeners();
+  }
+
+  AccountManager? _accountManager;
+  AccountManager get accountManager => _accountManager ??= AccountManager(this);
+
+  AdminManager? _adminManager;
+  AdminManager get adminManager => _adminManager ??= AdminManager(this);
 
   AuthManager? _authManager;
   AuthManager get authManager => _authManager ??= AuthManager(this);

@@ -32,4 +32,35 @@ class BeauticianhProfileManager extends ChangeNotifier {
     isLoading = false;
     notifyListeners();
   }
+
+  Future<bool> updateProfile({
+    required String bio,
+    required List<String> specializations,
+    required int experienceYears,
+  }) async {
+    isSaving = true;
+    lastError = null;
+    notifyListeners();
+    try {
+      final response = await _manager.dio.post(
+        '/kbeauty/beauticians/profile/update',
+        data: {
+          'bio': bio,
+          'specializations': specializations,
+          'experience_years': experienceYears,
+        },
+      );
+      if (response.data['success'] == true) {
+        await getProfile();
+        return true;
+      }
+      lastError = response.data['message']?.toString();
+    } catch (e) {
+      lastError = e.toString();
+    } finally {
+      isSaving = false;
+      notifyListeners();
+    }
+    return false;
+  }
 }

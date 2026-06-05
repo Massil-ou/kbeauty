@@ -104,6 +104,8 @@ class _OffreViewState extends State<OffreView> {
                             padding: const EdgeInsets.fromLTRB(16, 28, 16, 20),
                             child: Column(
                               children: [
+                                _featuredOffers(),
+                                const SizedBox(height: 30),
                                 _categoryPicker(),
                                 const SizedBox(height: 30),
                                 _servicesSection(),
@@ -201,6 +203,45 @@ class _OffreViewState extends State<OffreView> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _featuredOffers() {
+    return ListenableBuilder(
+      listenable: _serviceManager,
+      builder: (context, _) {
+        final offers = _serviceManager.services.take(8).toList();
+        if (offers.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const KBeautySectionTitle(
+              title: 'À découvrir aujourd’hui',
+              subtitle:
+                  'Des offres mises en avant, à parcourir comme votre sélection préférée.',
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 245,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: offers.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 13),
+                itemBuilder: (_, index) {
+                  final service = offers[index];
+                  return _FeaturedOfferCard(
+                    service: service,
+                    onTap: () => context.pushNamed(
+                      'service_detail',
+                      pathParameters: {'id': service.id},
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -544,6 +585,103 @@ class _ServiceCard extends StatelessWidget {
   }
 }
 
+class _FeaturedOfferCard extends StatelessWidget {
+  const _FeaturedOfferCard({required this.service, required this.onTap});
+
+  final ServiceModel service;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        width: MediaQuery.sizeOf(context).width < 600 ? 285 : 340,
+        clipBehavior: Clip.antiAlias,
+        decoration: KBeautyTheme.cardDecoration(radius: 22),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (service.images.isNotEmpty)
+              Image.network(
+                service.images.first,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const _ImageFallback(),
+              )
+            else
+              const _ImageFallback(),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Color(0xE6000000)],
+                  stops: [0.30, 1],
+                ),
+              ),
+            ),
+            Positioned(
+              top: 13,
+              left: 13,
+              child: KBeautyStatusChip(
+                label: service.category,
+                color: Colors.white,
+              ),
+            ),
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    service.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      height: 1.1,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${service.beautician.fullName} • ${service.durationMinutes} min',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${service.price.toStringAsFixed(0)} €',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ImageFallback extends StatelessWidget {
   const _ImageFallback();
 
@@ -707,7 +845,11 @@ class _PartnerCallout extends StatelessWidget {
           ),
           ElevatedButton.icon(
             onPressed: () => context.go(
-              manager.isBeauticianhRole ? '/beautician/dashboard' : '/login',
+              manager.isBeauticianhRole
+                  ? '/beautician/dashboard'
+                  : manager.isAuthenticated
+                      ? '/account/profile?section=pro'
+                      : '/login',
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
@@ -715,7 +857,11 @@ class _PartnerCallout extends StatelessWidget {
             ),
             icon: const Icon(Icons.arrow_forward_rounded),
             label: Text(
-              manager.isBeauticianhRole ? 'Ouvrir mon espace' : 'Se connecter',
+              manager.isBeauticianhRole
+                  ? 'Ouvrir mon espace'
+                  : manager.isAuthenticated
+                      ? 'Devenir professionnelle'
+                      : 'Se connecter',
             ),
           ),
         ],

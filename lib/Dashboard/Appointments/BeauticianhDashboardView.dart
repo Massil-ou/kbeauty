@@ -51,10 +51,21 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
               const SizedBox(height: 14),
               Align(
                 alignment: Alignment.centerRight,
-                child: ElevatedButton.icon(
-                  onPressed: () => context.go('/beautician/services/new'),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Publier une prestation'),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () => context.go('/beautician/services'),
+                      icon: const Icon(Icons.list_alt_outlined),
+                      label: const Text('Mes prestations'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => context.go('/beautician/services/new'),
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('Publier une prestation'),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 18),
@@ -136,7 +147,12 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
                   message: 'Les rendez-vous acceptés seront affichés ici.',
                 )
               else
-                ...confirmed.map((appointment) => _ConfirmedCard(appointment)),
+                ...confirmed.map(
+                  (appointment) => _ConfirmedCard(
+                    appointment,
+                    onComplete: () => _complete(appointment.id),
+                  ),
+                ),
             ],
           ),
         );
@@ -229,6 +245,15 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
     controller.dispose();
     if (reason == null) return;
     await _appointmentManager.declineAppointment(appointmentId, reason);
+  }
+
+  Future<void> _complete(String appointmentId) async {
+    final ok = await _appointmentManager.completeAppointment(appointmentId);
+    if (ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Rendez-vous marqué comme terminé.')),
+      );
+    }
   }
 }
 
@@ -342,20 +367,34 @@ class _RequestCard extends StatelessWidget {
 }
 
 class _ConfirmedCard extends StatelessWidget {
-  const _ConfirmedCard(this.appointment);
+  const _ConfirmedCard(this.appointment, {required this.onComplete});
 
   final AppointmentModel appointment;
+  final VoidCallback onComplete;
 
   @override
   Widget build(BuildContext context) {
     return KBeautyCard(
       margin: const EdgeInsets.only(bottom: 12),
-      child: _AppointmentHeader(
-        appointment: appointment,
-        status: const KBeautyStatusChip(
-          label: 'Confirmé',
-          color: KBeautyTheme.success,
-        ),
+      child: Column(
+        children: [
+          _AppointmentHeader(
+            appointment: appointment,
+            status: const KBeautyStatusChip(
+              label: 'Confirmé',
+              color: KBeautyTheme.success,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onComplete,
+              icon: const Icon(Icons.task_alt_rounded),
+              label: const Text('Marquer comme terminé'),
+            ),
+          ),
+        ],
       ),
     );
   }

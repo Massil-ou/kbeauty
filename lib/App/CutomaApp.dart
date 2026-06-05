@@ -3,12 +3,17 @@ import 'package:go_router/go_router.dart';
 
 import '../Auth/LoginView.dart';
 import '../Auth/SignupView.dart';
+import '../Account/AccountDashboardView.dart';
+import '../Account/ProfileView.dart';
+import '../Admin/AdminDashboardView.dart';
 import '../Booking/ConfirmBookingView.dart';
 import '../Booking/TimeSlotPickerView.dart';
 import '../Dashboard/Appointments/BeauticianhDashboardView.dart';
 import '../Dashboard/Appointments/MyAppointmentsView.dart';
 import '../Dashboard/Services/ServiceDetailView.dart';
 import '../Dashboard/Services/AddServiceView.dart';
+import '../Dashboard/Services/EditServiceView.dart';
+import '../Dashboard/Services/MyServicesView.dart';
 import '../Offre/OffreView.dart';
 import '../Reviews/ReviewFormView.dart';
 import '../Shared/KBeautyTheme.dart';
@@ -38,6 +43,8 @@ class _KBeautyAppState extends State<KBeautyApp> {
       final authRoute = location == '/login' || location == '/signup';
       final protected = location == '/appointments' ||
           location == '/booking/confirm' ||
+          location.startsWith('/account/') ||
+          location == '/admin' ||
           location.startsWith('/reviews/') ||
           location.startsWith('/beautician/');
 
@@ -45,13 +52,12 @@ class _KBeautyAppState extends State<KBeautyApp> {
         return '/login?redirect=${Uri.encodeComponent(state.uri.toString())}';
       }
       if (authenticated && authRoute) return '/';
-      if (location == '/beautician/dashboard' &&
+      if (location.startsWith('/beautician/') &&
           !widget.manager.isBeauticianhRole) {
         return '/appointments';
       }
-      if (location == '/beautician/services/new' &&
-          !widget.manager.isBeauticianhRole) {
-        return '/appointments';
+      if (location == '/admin' && !widget.manager.isAdminRole) {
+        return '/account/dashboard';
       }
       return null;
     },
@@ -95,6 +101,20 @@ class _KBeautyAppState extends State<KBeautyApp> {
             ConfirmBookingView(manager: widget.manager),
       ),
       GoRoute(
+        path: '/account/dashboard',
+        name: 'account_dashboard',
+        builder: (context, state) =>
+            AccountDashboardView(manager: widget.manager),
+      ),
+      GoRoute(
+        path: '/account/profile',
+        name: 'account_profile',
+        builder: (context, state) => ProfileView(
+          manager: widget.manager,
+          initialSection: state.uri.queryParameters['section'] ?? 'personal',
+        ),
+      ),
+      GoRoute(
         path: '/appointments',
         name: 'my_appointments',
         builder: (context, state) =>
@@ -107,9 +127,28 @@ class _KBeautyAppState extends State<KBeautyApp> {
             BeauticianhDashboardView(manager: widget.manager),
       ),
       GoRoute(
+        path: '/beautician/services',
+        name: 'my_services',
+        builder: (context, state) => MyServicesView(manager: widget.manager),
+      ),
+      GoRoute(
         path: '/beautician/services/new',
         name: 'create_service',
         builder: (context, state) => AddServiceView(manager: widget.manager),
+      ),
+      GoRoute(
+        path: '/beautician/services/:id/edit',
+        name: 'edit_service',
+        builder: (context, state) => EditServiceView(
+          manager: widget.manager,
+          serviceId: state.pathParameters['id'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/admin',
+        name: 'admin',
+        builder: (context, state) =>
+            AdminDashboardView(manager: widget.manager),
       ),
       GoRoute(
         path: '/reviews/:appointment_id',

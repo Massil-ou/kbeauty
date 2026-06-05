@@ -90,6 +90,10 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                 ...appointments.map(
                   (appointment) => _AppointmentCard(
                     appointment: appointment,
+                    onCancel: appointment.status == 'confirmed' ||
+                            appointment.status == 'pending_confirmation'
+                        ? () => _cancel(appointment)
+                        : null,
                     onReview: appointment.status == 'completed'
                         ? () => context.pushNamed(
                               'write_review',
@@ -105,6 +109,43 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
         );
       },
     );
+  }
+
+  Future<void> _cancel(AppointmentModel appointment) async {
+    final reason = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Annuler le rendez-vous ?'),
+        content: TextField(
+          controller: reason,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Motif de l’annulation',
+            alignLabelWithHint: true,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Retour'),
+          ),
+          ElevatedButton(
+            style:
+                ElevatedButton.styleFrom(backgroundColor: KBeautyTheme.danger),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Annuler le rendez-vous'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _appointmentManager.cancelAppointment(
+        appointment.id,
+        reason.text.trim(),
+      );
+    }
+    reason.dispose();
   }
 }
 
@@ -155,10 +196,15 @@ class _TabButton extends StatelessWidget {
 }
 
 class _AppointmentCard extends StatelessWidget {
-  const _AppointmentCard({required this.appointment, this.onReview});
+  const _AppointmentCard({
+    required this.appointment,
+    this.onReview,
+    this.onCancel,
+  });
 
   final AppointmentModel appointment;
   final VoidCallback? onReview;
+  final VoidCallback? onCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +254,9 @@ class _AppointmentCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      appointment.client.fullName,
+                      appointment.beauticianName.isEmpty
+                          ? appointment.client.fullName
+                          : appointment.beauticianName,
                       style: const TextStyle(
                         color: KBeautyTheme.muted,
                         fontSize: 12,
@@ -248,6 +296,20 @@ class _AppointmentCard extends StatelessWidget {
                 onPressed: onReview,
                 icon: const Icon(Icons.star_outline_rounded),
                 label: const Text('Évaluer la prestation'),
+              ),
+            ),
+          ],
+          if (onCancel != null) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onCancel,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: KBeautyTheme.danger,
+                ),
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text('Annuler le rendez-vous'),
               ),
             ),
           ],
