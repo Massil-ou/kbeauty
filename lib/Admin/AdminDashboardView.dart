@@ -216,58 +216,126 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   Widget _partnerRequest(Map<String, dynamic> partner) => KBeautyCard(
         margin: const EdgeInsets.only(bottom: 10),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const CircleAvatar(
-              backgroundColor: KBeautyTheme.goldSoft,
-              child: Icon(
-                Icons.workspace_premium_outlined,
-                color: KBeautyTheme.gold,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    partner['company_name']?.toString() ?? 'Dossier pro',
-                    style: const TextStyle(
-                      color: KBeautyTheme.text,
-                      fontWeight: FontWeight.w900,
-                    ),
+            Row(
+              children: [
+                const CircleAvatar(
+                  backgroundColor: KBeautyTheme.goldSoft,
+                  child: Icon(
+                    Icons.workspace_premium_outlined,
+                    color: KBeautyTheme.gold,
                   ),
-                  Text(
-                    '${partner['prenom'] ?? ''} ${partner['nom'] ?? ''} • ${partner['email'] ?? ''}',
-                    style: const TextStyle(
-                      color: KBeautyTheme.muted,
-                      fontSize: 12,
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        partner['company_name']?.toString() ?? 'Dossier pro',
+                        style: const TextStyle(
+                          color: KBeautyTheme.text,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        '${partner['first_name'] ?? ''} ${partner['last_name'] ?? ''} • ${partner['email'] ?? ''}',
+                        style: const TextStyle(
+                          color: KBeautyTheme.muted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                IconButton(
+                  tooltip: 'Refuser',
+                  color: KBeautyTheme.danger,
+                  onPressed: () => _reviewPartner(partner, false),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+                IconButton(
+                  tooltip: 'Accepter',
+                  color: KBeautyTheme.success,
+                  onPressed: () => _reviewPartner(partner, true),
+                  icon: const Icon(Icons.check_rounded),
+                ),
+              ],
             ),
-            IconButton(
-              tooltip: 'Refuser',
-              color: KBeautyTheme.danger,
-              onPressed: () => _manager.reviewPartner(
-                partner['iduser']?.toString() ?? '',
-                false,
-              ),
-              icon: const Icon(Icons.close_rounded),
-            ),
-            IconButton(
-              tooltip: 'Accepter',
-              color: KBeautyTheme.success,
-              onPressed: () => _manager.reviewPartner(
-                partner['iduser']?.toString() ?? '',
-                true,
-              ),
-              icon: const Icon(Icons.check_rounded),
+            const SizedBox(height: 13),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if ((partner['trade_name']?.toString() ?? '').isNotEmpty)
+                  KBeautyStatusChip(
+                    label: partner['trade_name'].toString(),
+                    color: KBeautyTheme.primary,
+                    icon: Icons.storefront_outlined,
+                  ),
+                if ((partner['company_type']?.toString() ?? '').isNotEmpty)
+                  KBeautyStatusChip(
+                    label: partner['company_type'].toString(),
+                    color: KBeautyTheme.lilac,
+                    icon: Icons.account_balance_outlined,
+                  ),
+                if ((partner['siret']?.toString() ?? '').isNotEmpty)
+                  KBeautyStatusChip(
+                    label: 'SIRET ${partner['siret']}',
+                    color: KBeautyTheme.muted,
+                    icon: Icons.numbers_outlined,
+                  ),
+                if ((partner['phone']?.toString() ?? '').isNotEmpty)
+                  KBeautyStatusChip(
+                    label: partner['phone'].toString(),
+                    color: KBeautyTheme.muted,
+                    icon: Icons.phone_outlined,
+                  ),
+              ],
             ),
           ],
         ),
       );
+
+  Future<void> _reviewPartner(
+    Map<String, dynamic> partner,
+    bool approve,
+  ) async {
+    final company = partner['company_name']?.toString() ?? 'ce dossier';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title:
+            Text(approve ? 'Valider le partenaire ?' : 'Refuser la demande ?'),
+        content: Text(
+          approve
+              ? '$company pourra publier et gérer ses prestations kBeauty.'
+              : '$company pourra corriger son dossier puis envoyer une nouvelle demande.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  approve ? KBeautyTheme.success : KBeautyTheme.danger,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(approve ? 'Valider' : 'Refuser'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _manager.reviewPartner(
+      partner['iduser']?.toString() ?? '',
+      approve,
+    );
+  }
 
   Widget _user(Map<String, dynamic> user) {
     final role = user['role']?.toString() ?? 'client';

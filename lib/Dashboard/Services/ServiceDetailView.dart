@@ -300,17 +300,19 @@ class _ServiceDetailViewState extends State<ServiceDetailView> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Container(
+                  SizedBox(
                     width: 54,
                     height: 54,
-                    decoration: const BoxDecoration(
-                      color: KBeautyTheme.primarySoft,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.person_outline,
-                      color: KBeautyTheme.primary,
-                      size: 27,
+                    child: ClipOval(
+                      child:
+                          service.beautician.profileImageUrl?.isNotEmpty == true
+                              ? Image.network(
+                                  service.beautician.profileImageUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      const _ProfessionalAvatarFallback(),
+                                )
+                              : const _ProfessionalAvatarFallback(),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -364,10 +366,42 @@ class _ServiceDetailViewState extends State<ServiceDetailView> {
                   ),
                 ),
               ],
+              if (service.beautician.specializations.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 7,
+                  runSpacing: 7,
+                  children: service.beautician.specializations
+                      .map(
+                        (item) => KBeautyStatusChip(
+                          label: item,
+                          color: KBeautyTheme.primary,
+                          icon: Icons.auto_awesome_outlined,
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ProfessionalAvatarFallback extends StatelessWidget {
+  const _ProfessionalAvatarFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: KBeautyTheme.primarySoft,
+      child: Icon(
+        Icons.person_outline,
+        color: KBeautyTheme.primary,
+        size: 27,
+      ),
     );
   }
 }

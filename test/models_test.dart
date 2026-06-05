@@ -21,12 +21,19 @@ void main() {
         'rating': 4.8,
         'appointmentCount': 12,
         'isVerified': true,
+        'phone': '0600000000',
+        'profileImageUrl': 'https://example.com/profile.jpg',
       },
     });
 
     expect(service.price, 45);
     expect(service.durationMinutes, 60);
     expect(service.beautician.fullName, 'Nadia Test');
+    expect(service.beautician.phone, '0600000000');
+    expect(
+      service.beautician.profileImageUrl,
+      'https://example.com/profile.jpg',
+    );
   });
 
   test('parses appointment list payload', () {

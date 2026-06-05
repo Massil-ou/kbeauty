@@ -201,6 +201,15 @@ class Manager extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateLocalRole(String role) async {
+    final normalized = role.trim().toLowerCase();
+    if (normalized.isEmpty || normalized == currentUserRole) return;
+    _currentUserRole = normalized;
+    final prefs = _preferences ?? await SharedPreferences.getInstance();
+    await prefs.setString(_roleKey, normalized);
+    notifyListeners();
+  }
+
   AccountManager? _accountManager;
   AccountManager get accountManager => _accountManager ??= AccountManager(this);
 

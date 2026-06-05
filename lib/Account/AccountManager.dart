@@ -13,6 +13,11 @@ class AccountManager extends ChangeNotifier {
 
   String get proStatus =>
       proProfile?['status_pro']?.toString().trim().toLowerCase() ?? '';
+  bool get hasProProfile => proProfile != null;
+  bool get isProPending => proStatus == 'pending';
+  bool get isProApproved => proStatus == 'approved' || proStatus == 'verified';
+  bool get isProRejected => proStatus == 'rejected';
+  bool get canEditProProfile => !isProPending;
 
   Future<bool> updatePersonalProfile({
     required String firstName,
@@ -55,7 +60,7 @@ class AccountManager extends ChangeNotifier {
     notifyListeners();
     try {
       final response = await _manager.dio.post(
-        '/cutoma/partner/profile/get',
+        '/kbeauty/partners/application/get',
         data: const {},
       );
       if (response.data['success'] == true) {
@@ -63,6 +68,11 @@ class AccountManager extends ChangeNotifier {
         proProfile = data is Map && data['profile'] is Map
             ? Map<String, dynamic>.from(data['profile'] as Map)
             : null;
+        if (data is Map &&
+            data['isPartner'] == true &&
+            !_manager.isBeauticianhRole) {
+          await _manager.updateLocalRole(data['role']?.toString() ?? 'partner');
+        }
       } else {
         lastError = response.data['message']?.toString();
       }
@@ -79,12 +89,22 @@ class AccountManager extends ChangeNotifier {
     lastError = null;
     notifyListeners();
     try {
-      final endpoint = proProfile == null
-          ? '/cutoma/partner/profile/request'
-          : '/cutoma/partner/profile/update';
-      final response = await _manager.dio.post(endpoint, data: data);
+      final response = await _manager.dio.post(
+        '/kbeauty/partners/application/save',
+        data: data,
+      );
       if (response.data['success'] == true) {
-        await loadProProfile();
+        final payload = response.data['data'];
+        proProfile = payload is Map && payload['profile'] is Map
+            ? Map<String, dynamic>.from(payload['profile'] as Map)
+            : proProfile;
+        if (payload is Map &&
+            payload['isPartner'] == true &&
+            !_manager.isBeauticianhRole) {
+          await _manager
+              .updateLocalRole(payload['role']?.toString() ?? 'partner');
+        }
+        notifyListeners();
         return true;
       }
       lastError = response.data['message']?.toString();

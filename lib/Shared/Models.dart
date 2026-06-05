@@ -267,6 +267,8 @@ class BeauticianhProfileModel {
   final double rating;
   final int appointmentCount;
   final bool isVerified;
+  final String? phone;
+  final String? profileImageUrl;
 
   BeauticianhProfileModel({
     required this.id,
@@ -279,6 +281,8 @@ class BeauticianhProfileModel {
     required this.rating,
     required this.appointmentCount,
     required this.isVerified,
+    this.phone,
+    this.profileImageUrl,
   });
 
   String get fullName => '$firstName $lastName';
@@ -295,6 +299,8 @@ class BeauticianhProfileModel {
       rating: (json['rating'] as num?)?.toDouble() ?? 0,
       appointmentCount: (json['appointmentCount'] as num?)?.toInt() ?? 0,
       isVerified: json['isVerified'] as bool? ?? false,
+      phone: json['phone']?.toString(),
+      profileImageUrl: json['profileImageUrl']?.toString(),
     );
   }
 }

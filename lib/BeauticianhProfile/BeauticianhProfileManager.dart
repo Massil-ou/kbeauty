@@ -37,6 +37,8 @@ class BeauticianhProfileManager extends ChangeNotifier {
     required String bio,
     required List<String> specializations,
     required int experienceYears,
+    required String phone,
+    required String profileImageUrl,
   }) async {
     isSaving = true;
     lastError = null;
@@ -48,6 +50,8 @@ class BeauticianhProfileManager extends ChangeNotifier {
           'bio': bio,
           'specializations': specializations,
           'experience_years': experienceYears,
+          'phone': phone,
+          'profile_image_url': profileImageUrl,
         },
       );
       if (response.data['success'] == true) {

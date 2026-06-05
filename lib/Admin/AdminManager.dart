@@ -22,10 +22,7 @@ class AdminManager extends ChangeNotifier {
         _manager.dio.post('/kbeauty/admin/summary'),
         _manager.dio.post('/kbeauty/admin/users/list'),
         _manager.dio.post('/kbeauty/admin/services/list'),
-        _manager.dio.post('/cutoma/admin/partner/list', data: {
-          'limit': 200,
-          'offset': 0,
-        }),
+        _manager.dio.post('/kbeauty/admin/partners/list'),
       ]);
       for (final response in responses) {
         if (response.data['success'] != true) {
@@ -47,8 +44,8 @@ class AdminManager extends ChangeNotifier {
   Future<void> reviewPartner(String userId, bool accept) async {
     try {
       final response = await _manager.dio.post(
-        '/cutoma/admin/partner/update',
-        data: {'iduser': userId, 'action': accept ? 'accept' : 'reject'},
+        '/kbeauty/admin/partners/review',
+        data: {'user_id': userId, 'action': accept ? 'approve' : 'reject'},
       );
       if (response.data['success'] == true) {
         await loadAll();
