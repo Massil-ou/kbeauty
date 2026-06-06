@@ -52,7 +52,7 @@ class AuthScaffold extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: Image.asset(
-                          'assets/icons/kbeauty-icon.png',
+                          'assets/icons/keauty-icon.png',
                           width: 32,
                           height: 32,
                           fit: BoxFit.contain,

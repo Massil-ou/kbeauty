@@ -50,7 +50,7 @@ class KBeautyHeader extends StatelessWidget implements PreferredSizeWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: Image.asset(
-                      'assets/icons/kbeauty-icon.png',
+                      'assets/icons/keauty-icon.png',
                       width: 34,
                       height: 34,
                       fit: BoxFit.cover,
