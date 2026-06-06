@@ -50,6 +50,7 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
         return KBeautyPage(
           manager: widget.manager,
           title: 'Espace professionnelle',
+          showBack: false,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

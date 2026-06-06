@@ -37,7 +37,7 @@ class KBeautyHeader extends StatelessWidget implements PreferredSizeWidget {
             if (showBack) ...[
               IconButton(
                 tooltip: 'Retour',
-                onPressed: onBack ?? () => context.pop(),
+                onPressed: onBack ?? () => _navigateBack(context),
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
               ),
               const SizedBox(width: 2),
@@ -79,6 +79,37 @@ class KBeautyHeader extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
     );
+  }
+
+  void _navigateBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    final loc = GoRouterState.of(context).matchedLocation;
+    if (loc.startsWith('/account/profile') || loc.startsWith('/account/')) {
+      context.go('/account/dashboard');
+    } else if (loc.startsWith('/appointments/')) {
+      context.go('/appointments');
+    } else if (loc == '/appointments') {
+      context.go('/account/dashboard');
+    } else if (loc.startsWith('/beautician/services/')) {
+      context.go('/beautician/services');
+    } else if (loc == '/beautician/services') {
+      context.go('/beautician/dashboard');
+    } else if (loc == '/beautician/dashboard') {
+      context.go('/account/dashboard');
+    } else if (loc == '/admin') {
+      context.go('/account/dashboard');
+    } else if (loc.startsWith('/reviews/')) {
+      context.go('/appointments');
+    } else if (loc.startsWith('/checkout/')) {
+      context.go('/appointments');
+    } else if (loc.startsWith('/booking/') || loc.startsWith('/services/')) {
+      context.go('/');
+    } else {
+      context.go(manager.isAuthenticated ? '/account/dashboard' : '/');
+    }
   }
 
   List<Widget> _accountActions(BuildContext context) {
@@ -142,28 +173,44 @@ class KBeautyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: KBeautyTheme.background,
-      appBar: KBeautyHeader(
-        manager: manager,
-        title: title,
-        showBack: showBack,
-        actions: actions,
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const KBeautyBackdrop(),
-          SingleChildScrollView(
-            padding: padding,
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1120),
-                child: child,
+    return PopScope(
+      canPop: showBack,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && showBack == false) {
+          // Root page — back navigates to the correct fallback instead of exiting
+          final loc = GoRouterState.of(context).matchedLocation;
+          if (loc == '/account/dashboard' ||
+              loc == '/beautician/dashboard' ||
+              loc == '/admin') {
+            // Already on a root dashboard — do nothing
+          } else {
+            context.go(manager.isAuthenticated ? '/account/dashboard' : '/');
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: KBeautyTheme.background,
+        appBar: KBeautyHeader(
+          manager: manager,
+          title: title,
+          showBack: showBack,
+          actions: actions,
+        ),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            const KBeautyBackdrop(),
+            SingleChildScrollView(
+              padding: padding,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1120),
+                  child: child,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

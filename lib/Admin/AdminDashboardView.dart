@@ -30,6 +30,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       builder: (context, _) => KBeautyPage(
         manager: widget.manager,
         title: 'Administration',
+        showBack: false,
         actions: [
           IconButton(
             tooltip: 'Actualiser',

@@ -67,73 +67,76 @@ class _OffreViewState extends State<OffreView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: KBeautyTheme.background,
-      appBar: KBeautyHeader(manager: widget.manager),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const KBeautyBackdrop(),
-          RefreshIndicator(
-            onRefresh: _search,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                children: [
-                  _Hero(
-                    controller: _searchCtrl,
-                    cityController: _cityCtrl,
-                    onSearch: _search,
-                    manager: widget.manager,
-                  ),
-                  Transform.translate(
-                    offset: const Offset(0, -34),
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: KBeautyTheme.background.withValues(alpha: 0.96),
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(36),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: KBeautyTheme.primaryDark.withValues(
-                              alpha: 0.09,
-                            ),
-                            blurRadius: 30,
-                            offset: const Offset(0, -8),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: KBeautyTheme.background,
+        appBar: KBeautyHeader(manager: widget.manager),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            const KBeautyBackdrop(),
+            RefreshIndicator(
+              onRefresh: _search,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    _Hero(
+                      controller: _searchCtrl,
+                      cityController: _cityCtrl,
+                      onSearch: _search,
+                      manager: widget.manager,
+                    ),
+                    Transform.translate(
+                      offset: const Offset(0, -34),
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: KBeautyTheme.background.withValues(alpha: 0.96),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(36),
                           ),
-                        ],
-                      ),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints:
-                              const BoxConstraints(maxWidth: _maxWidth),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 28, 16, 20),
-                            child: Column(
-                              children: [
-                                _featuredOffers(),
-                                const SizedBox(height: 30),
-                                _categoryPicker(),
-                                const SizedBox(height: 30),
-                                _servicesSection(),
-                                const SizedBox(height: 42),
-                                const _HowItWorks(),
-                                const SizedBox(height: 34),
-                                _PartnerCallout(manager: widget.manager),
-                              ],
+                          boxShadow: [
+                            BoxShadow(
+                              color: KBeautyTheme.primaryDark.withValues(
+                                alpha: 0.09,
+                              ),
+                              blurRadius: 30,
+                              offset: const Offset(0, -8),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints:
+                                const BoxConstraints(maxWidth: _maxWidth),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 28, 16, 20),
+                              child: Column(
+                                children: [
+                                  _featuredOffers(),
+                                  const SizedBox(height: 30),
+                                  _categoryPicker(),
+                                  const SizedBox(height: 30),
+                                  _servicesSection(),
+                                  const SizedBox(height: 42),
+                                  const _HowItWorks(),
+                                  const SizedBox(height: 34),
+                                  _PartnerCallout(manager: widget.manager),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -339,26 +342,32 @@ class _OffreViewState extends State<OffreView> {
               const KBeautySkeletonGrid()
             else if (_serviceManager.activeSearchCity == null &&
                 _serviceManager.services.isEmpty)
-              KBeautyEmptyState(
-                icon: Icons.location_city_outlined,
-                title: 'Choisissez votre ville',
-                message:
-                    'Les offres sont filtrées par zone d’intervention. Cela évite de réserver une prestation trop loin de chez vous.',
-                action: ElevatedButton.icon(
-                  onPressed: _search,
-                  icon: const Icon(Icons.search_rounded),
-                  label: const Text('Rechercher dans ma ville'),
+              SizedBox(
+                width: double.infinity,
+                child: KBeautyEmptyState(
+                  icon: Icons.location_city_outlined,
+                  title: "Choisissez votre ville",
+                  message:
+                      "Les offres sont filtrées par zone d’intervention. Cela évite de réserver une prestation trop loin de chez vous.",
+                  action: ElevatedButton.icon(
+                    onPressed: _search,
+                    icon: const Icon(Icons.search_rounded),
+                    label: const Text("Rechercher dans ma ville"),
+                  ),
                 ),
               )
             else if (_serviceManager.services.isEmpty)
-              KBeautyEmptyState(
-                icon: Icons.search_off_rounded,
-                title: 'Aucune prestation trouvée',
-                message: _serviceManager.lastError ??
-                    'Essayez une autre recherche ou retirez les filtres.',
-                action: OutlinedButton(
-                  onPressed: _reset,
-                  child: const Text('Changer de recherche'),
+              SizedBox(
+                width: double.infinity,
+                child: KBeautyEmptyState(
+                  icon: Icons.search_off_rounded,
+                  title: "Aucune prestation trouvée",
+                  message: _serviceManager.lastError ??
+                      "Essayez une autre recherche ou retirez les filtres.",
+                  action: OutlinedButton(
+                    onPressed: _reset,
+                    child: const Text("Changer de recherche"),
+                  ),
                 ),
               )
             else
@@ -431,7 +440,7 @@ class _Hero extends StatelessWidget {
           const KBeautyBackdrop(strong: true),
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 900),
+              constraints: const BoxConstraints(maxWidth: 1180),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(18, 34, 18, 72),
                 child: Column(

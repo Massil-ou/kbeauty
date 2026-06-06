@@ -32,6 +32,7 @@ class _AccountDashboardViewState extends State<AccountDashboardView> {
     return KBeautyPage(
       manager: manager,
       title: 'Mon espace',
+      showBack: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -398,10 +399,13 @@ class _AccountDashboardViewState extends State<AccountDashboardView> {
               ),
             ),
             const SizedBox(height: 12),
-            TextButton.icon(
-              onPressed: () => context.go('/'),
-              icon: const Icon(Icons.location_city_outlined),
-              label: const Text('Rechercher par ville pour réserver'),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: () => context.go('/'),
+                icon: const Icon(Icons.location_city_outlined),
+                label: const Text('Rechercher par ville pour réserver'),
+              ),
             ),
           ],
         );

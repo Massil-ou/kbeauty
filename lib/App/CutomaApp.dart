@@ -54,7 +54,7 @@ class _KBeautyAppState extends State<KBeautyApp> {
       if (!authenticated && protected) {
         return '/login?redirect=${Uri.encodeComponent(state.uri.toString())}';
       }
-      if (authenticated && authRoute) return '/';
+      if (authenticated && authRoute) return '/account/dashboard';
       if (location.startsWith('/beautician/') &&
           !widget.manager.isBeauticianhRole) {
         return '/appointments';
