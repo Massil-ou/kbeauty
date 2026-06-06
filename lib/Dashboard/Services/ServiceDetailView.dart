@@ -324,7 +324,7 @@ class _ServiceDetailViewState extends State<ServiceDetailView> {
                           children: [
                             Flexible(
                               child: Text(
-                                service.beautician.fullName,
+                                service.beautician.businessName,
                                 style: const TextStyle(
                                   color: KBeautyTheme.text,
                                   fontSize: 16,

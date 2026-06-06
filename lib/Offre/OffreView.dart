@@ -538,7 +538,7 @@ class _ServiceCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      service.beautician.fullName,
+                      service.beautician.businessName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -652,7 +652,7 @@ class _FeaturedOfferCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${service.beautician.fullName} • ${service.durationMinutes} min',
+                          '${service.beautician.businessName} • ${service.durationMinutes} min',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(

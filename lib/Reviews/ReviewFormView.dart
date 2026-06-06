@@ -32,9 +32,19 @@ class _ReviewFormViewState extends State<ReviewFormView> {
 
   @override
   Widget build(BuildContext context) {
+    final isBeauticianReview = widget.manager.isBeauticianhRole;
+    final title =
+        isBeauticianReview ? 'Évaluer la cliente' : 'Évaluer la prestation';
+    final heading = isBeauticianReview
+        ? 'Comment s’est passé ce rendez-vous ?'
+        : 'Comment s’est passée votre prestation ?';
+    final subtitle = isBeauticianReview
+        ? 'Votre retour aide à sécuriser la communauté et à garder des rendez-vous sérieux.'
+        : 'Votre avis aide les autres clientes et valorise le travail de la professionnelle.';
+
     return KBeautyPage(
       manager: widget.manager,
-      title: 'Évaluer la prestation',
+      title: title,
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 650),
@@ -55,20 +65,20 @@ class _ReviewFormViewState extends State<ReviewFormView> {
                   ),
                 ),
                 const SizedBox(height: 15),
-                const Text(
-                  'Comment s’est passée votre prestation ?',
+                Text(
+                  heading,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: KBeautyTheme.text,
                     fontSize: 21,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 7),
-                const Text(
-                  'Votre avis aide les autres clientes et valorise le travail de la professionnelle.',
+                Text(
+                  subtitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: KBeautyTheme.muted,
                     fontSize: 13,
                     height: 1.45,
@@ -98,11 +108,13 @@ class _ReviewFormViewState extends State<ReviewFormView> {
                 TextField(
                   controller: _comment,
                   maxLines: 5,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Votre commentaire',
-                    hintText: 'Partagez votre expérience...',
+                    hintText: isBeauticianReview
+                        ? 'Ponctualité, respect du rendez-vous, communication...'
+                        : 'Partagez votre expérience...',
                     alignLabelWithHint: true,
-                    prefixIcon: Icon(Icons.rate_review_outlined),
+                    prefixIcon: const Icon(Icons.rate_review_outlined),
                   ),
                 ),
                 if (_reviewManager.lastError != null) ...[

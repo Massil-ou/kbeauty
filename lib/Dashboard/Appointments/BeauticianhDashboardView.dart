@@ -174,7 +174,19 @@ class _BeauticianhDashboardViewState extends State<BeauticianhDashboardView> {
                   message: 'Les rendez-vous terminés apparaîtront ici.',
                 )
               else
-                ...history.take(20).map(_HistoryCard.new),
+                ...history.take(20).map(
+                      (appointment) => _HistoryCard(
+                        appointment,
+                        onReview: appointment.canReviewClient
+                            ? () => context.pushNamed(
+                                  'write_review',
+                                  pathParameters: {
+                                    'appointment_id': appointment.id,
+                                  },
+                                )
+                            : null,
+                      ),
+                    ),
             ],
           ),
         );
@@ -533,21 +545,47 @@ class _AppointmentHeader extends StatelessWidget {
 }
 
 class _HistoryCard extends StatelessWidget {
-  const _HistoryCard(this.appointment);
+  const _HistoryCard(this.appointment, {this.onReview});
 
   final AppointmentModel appointment;
+  final VoidCallback? onReview;
 
   @override
   Widget build(BuildContext context) {
     final completed = appointment.status == 'completed';
     return KBeautyCard(
       margin: const EdgeInsets.only(bottom: 10),
-      child: _AppointmentHeader(
-        appointment: appointment,
-        status: KBeautyStatusChip(
-          label: completed ? 'Terminé' : 'Annulé',
-          color: completed ? KBeautyTheme.lilac : KBeautyTheme.danger,
-        ),
+      child: Column(
+        children: [
+          _AppointmentHeader(
+            appointment: appointment,
+            status: KBeautyStatusChip(
+              label: completed ? 'Terminé' : 'Annulé',
+              color: completed ? KBeautyTheme.lilac : KBeautyTheme.danger,
+            ),
+          ),
+          if (onReview != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onReview,
+                icon: const Icon(Icons.star_outline_rounded),
+                label: const Text('Évaluer la cliente'),
+              ),
+            ),
+          ] else if (appointment.hasClientReview) ...[
+            const SizedBox(height: 12),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: KBeautyStatusChip(
+                label: 'Cliente évaluée',
+                color: KBeautyTheme.success,
+                icon: Icons.check_circle_outline,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

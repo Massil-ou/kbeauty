@@ -112,7 +112,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                     onCancel: appointment.canCancel
                         ? () => _cancel(appointment)
                         : null,
-                    onReview: appointment.status == 'completed'
+                    onReview: appointment.canReviewService
                         ? () => context.pushNamed(
                               'write_review',
                               pathParameters: {
@@ -385,6 +385,13 @@ class _AppointmentCard extends StatelessWidget {
                 icon: const Icon(Icons.star_outline_rounded),
                 label: const Text('Évaluer la prestation'),
               ),
+            ),
+          ] else if (appointment.hasServiceReview) ...[
+            const SizedBox(height: 15),
+            const KBeautyStatusChip(
+              label: 'Avis envoyé',
+              color: KBeautyTheme.success,
+              icon: Icons.check_circle_outline,
             ),
           ],
           if (onCancel != null) ...[

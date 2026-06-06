@@ -187,6 +187,10 @@ class AppointmentModel {
   final bool canEditDetails;
   final int changeCutoffHours;
   final DateTime? completedAt;
+  final bool hasServiceReview;
+  final bool canReviewService;
+  final bool hasClientReview;
+  final bool canReviewClient;
 
   AppointmentModel({
     required this.id,
@@ -215,6 +219,10 @@ class AppointmentModel {
     this.canEditDetails = false,
     this.changeCutoffHours = 24,
     this.completedAt,
+    this.hasServiceReview = false,
+    this.canReviewService = false,
+    this.hasClientReview = false,
+    this.canReviewClient = false,
   });
 
   factory AppointmentModel.fromJson(Map<String, dynamic> json) {
@@ -248,6 +256,10 @@ class AppointmentModel {
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'])
           : null,
+      hasServiceReview: json['hasServiceReview'] == true,
+      canReviewService: json['canReviewService'] == true,
+      hasClientReview: json['hasClientReview'] == true,
+      canReviewClient: json['canReviewClient'] == true,
     );
   }
 }
@@ -269,6 +281,8 @@ class BeauticianhProfileModel {
   final bool isVerified;
   final String? phone;
   final String? profileImageUrl;
+  final String? companyName;
+  final String? tradeName;
 
   BeauticianhProfileModel({
     required this.id,
@@ -283,9 +297,18 @@ class BeauticianhProfileModel {
     required this.isVerified,
     this.phone,
     this.profileImageUrl,
+    this.companyName,
+    this.tradeName,
   });
 
   String get fullName => '$firstName $lastName';
+  String get businessName {
+    final trade = tradeName?.trim();
+    if (trade != null && trade.isNotEmpty) return trade;
+    final company = companyName?.trim();
+    if (company != null && company.isNotEmpty) return company;
+    return fullName.trim();
+  }
 
   factory BeauticianhProfileModel.fromJson(Map<String, dynamic> json) {
     return BeauticianhProfileModel(
@@ -301,6 +324,8 @@ class BeauticianhProfileModel {
       isVerified: json['isVerified'] as bool? ?? false,
       phone: json['phone']?.toString(),
       profileImageUrl: json['profileImageUrl']?.toString(),
+      companyName: json['companyName']?.toString(),
+      tradeName: json['tradeName']?.toString(),
     );
   }
 }

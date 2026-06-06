@@ -18,6 +18,8 @@ void main() {
         'id': 'beautician-1',
         'firstName': 'Nadia',
         'lastName': 'Test',
+        'companyName': 'Nadia Beauty SAS',
+        'tradeName': 'Nadia Beauty Studio',
         'rating': 4.8,
         'appointmentCount': 12,
         'isVerified': true,
@@ -29,6 +31,7 @@ void main() {
     expect(service.price, 45);
     expect(service.durationMinutes, 60);
     expect(service.beautician.fullName, 'Nadia Test');
+    expect(service.beautician.businessName, 'Nadia Beauty Studio');
     expect(service.beautician.phone, '0600000000');
     expect(
       service.beautician.profileImageUrl,
@@ -51,6 +54,10 @@ void main() {
       'canCancel': true,
       'canReschedule': true,
       'canEditDetails': true,
+      'hasServiceReview': false,
+      'canReviewService': true,
+      'hasClientReview': true,
+      'canReviewClient': false,
       'changeCutoffHours': 24,
       'serviceId': 'service-1',
       'beauticianhId': 'beautician-1',
@@ -65,6 +72,8 @@ void main() {
     expect(appointment.client.fullName, 'Celia Test');
     expect(appointment.durationMinutes, 90);
     expect(appointment.canCancel, isTrue);
+    expect(appointment.canReviewService, isTrue);
+    expect(appointment.hasClientReview, isTrue);
     expect(appointment.changeCutoffHours, 24);
   });
 
