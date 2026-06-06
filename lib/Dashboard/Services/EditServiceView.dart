@@ -20,13 +20,6 @@ class EditServiceView extends StatefulWidget {
 }
 
 class _EditServiceViewState extends State<EditServiceView> {
-  static const _categories = [
-    'Coiffure',
-    'Ongles',
-    'Maquillage',
-    'Massage',
-    'Épilation',
-  ];
   static const _durations = [30, 45, 60, 75, 90, 120, 150, 180];
   final _formKey = GlobalKey<FormState>();
   final _title = TextEditingController();
@@ -34,7 +27,7 @@ class _EditServiceViewState extends State<EditServiceView> {
   final _subcategory = TextEditingController();
   final _price = TextEditingController();
   final _image = TextEditingController();
-  String _category = _categories.first;
+  String? _category;
   int _duration = 60;
   bool _hydrated = false;
   late final _manager = widget.manager.serviceManager;
@@ -46,6 +39,7 @@ class _EditServiceViewState extends State<EditServiceView> {
   }
 
   Future<void> _load() async {
+    await _manager.loadCategories();
     if (_manager.ownServices.isEmpty) await _manager.listMine();
     if (mounted) setState(_hydrate);
   }
@@ -65,9 +59,7 @@ class _EditServiceViewState extends State<EditServiceView> {
     _subcategory.text = service.subcategory ?? '';
     _price.text = service.price.toStringAsFixed(2);
     _image.text = service.images.isEmpty ? '' : service.images.first;
-    _category = _categories.contains(service.category)
-        ? service.category
-        : _categories.first;
+    _category = service.category;
     _duration = _durations.contains(service.durationMinutes)
         ? service.durationMinutes
         : 60;
@@ -138,18 +130,36 @@ class _EditServiceViewState extends State<EditServiceView> {
                       KBeautyCard(
                         child: Column(
                           children: [
-                            DropdownButtonFormField<String>(
-                              initialValue: _category,
-                              items: _categories
-                                  .map((item) => DropdownMenuItem(
-                                        value: item,
-                                        child: Text(item),
-                                      ))
-                                  .toList(),
-                              onChanged: (value) => setState(
-                                  () => _category = value ?? _category),
-                              decoration:
-                                  const InputDecoration(labelText: 'Catégorie'),
+                            Builder(
+                              builder: (context) {
+                                final categories = _categoryOptions();
+                                if (_manager.isLoadingCategories &&
+                                    categories.isEmpty) {
+                                  return const KBeautySkeletonList(
+                                    count: 1,
+                                    compact: true,
+                                  );
+                                }
+                                return DropdownButtonFormField<String>(
+                                  initialValue: categories.contains(_category)
+                                      ? _category
+                                      : null,
+                                  items: categories
+                                      .map((item) => DropdownMenuItem(
+                                            value: item,
+                                            child: Text(item),
+                                          ))
+                                      .toList(),
+                                  validator: (value) => value == null
+                                      ? 'Choisissez une catégorie.'
+                                      : null,
+                                  onChanged: (value) =>
+                                      setState(() => _category = value),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Catégorie',
+                                  ),
+                                );
+                              },
                             ),
                             const SizedBox(height: 12),
                             _field(_subcategory, 'Sous-catégorie',
@@ -216,13 +226,14 @@ class _EditServiceViewState extends State<EditServiceView> {
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final price = double.tryParse(_price.text.replaceAll(',', '.'));
-    if (price == null || price <= 0) return;
+    final category = _category;
+    if (price == null || price <= 0 || category == null) return;
     final image = _image.text.trim();
     final ok = await _manager.updateService(
       id: widget.serviceId,
       title: _title.text.trim(),
       description: _description.text.trim(),
-      category: _category,
+      category: category,
       subcategory: _subcategory.text.trim(),
       price: price,
       durationMinutes: _duration,
@@ -233,4 +244,13 @@ class _EditServiceViewState extends State<EditServiceView> {
 
   String? _required(String? value) =>
       (value ?? '').trim().isEmpty ? 'Ce champ est requis.' : null;
+
+  List<String> _categoryOptions() {
+    final names = _manager.categories.map((item) => item.name).toList();
+    final current = _category;
+    if (current != null && current.isNotEmpty && !names.contains(current)) {
+      return [current, ...names];
+    }
+    return names;
+  }
 }

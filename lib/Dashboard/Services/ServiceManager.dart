@@ -15,7 +15,9 @@ class ServiceManager extends ChangeNotifier {
 
   List<ServiceModel> services = [];
   List<ServiceModel> ownServices = [];
+  List<ServiceCategoryModel> categories = [];
   bool isLoading = false;
+  bool isLoadingCategories = false;
   bool isSaving = false;
   bool hasMore = false;
   String? lastError;
@@ -26,6 +28,32 @@ class ServiceManager extends ChangeNotifier {
   // =========================================================================
   // SEARCH & BROWSE
   // =========================================================================
+
+  Future<void> loadCategories() async {
+    if (isLoadingCategories) return;
+    isLoadingCategories = true;
+    notifyListeners();
+    try {
+      final response = await _manager.dio.post('/kbeauty/categories/list');
+      if (response.data['success'] == true) {
+        categories = (response.data['data']['categories'] as List? ?? [])
+            .whereType<Map>()
+            .map((item) => ServiceCategoryModel.fromJson(
+                  Map<String, dynamic>.from(item),
+                ))
+            .where((item) => item.name.trim().isNotEmpty)
+            .toList();
+        lastError = null;
+      } else {
+        lastError = response.data['message']?.toString();
+      }
+    } catch (e) {
+      lastError = e.toString();
+    } finally {
+      isLoadingCategories = false;
+      notifyListeners();
+    }
+  }
 
   /// Search services by query, category, location
   Future<void> searchServices({

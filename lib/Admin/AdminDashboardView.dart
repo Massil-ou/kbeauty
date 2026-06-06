@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../App/Manager.dart';
+import '../Shared/KBeautyCategoryIcons.dart';
 import '../Shared/KBeautyTheme.dart';
 import '../Shared/KBeautyWidgets.dart';
 
@@ -63,6 +64,19 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 const SizedBox(height: 13),
                 ..._manager.pendingPartners.map(_partnerRequest),
               ],
+              const SizedBox(height: 26),
+              KBeautySectionTitle(
+                title: 'Catégories',
+                subtitle:
+                    '${_manager.categories.length} catégorie(s) paramétrable(s). Elles ne se suppriment pas.',
+                trailing: ElevatedButton.icon(
+                  onPressed: () => _categoryDialog(),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Ajouter'),
+                ),
+              ),
+              const SizedBox(height: 13),
+              ..._manager.categories.map(_category),
               const SizedBox(height: 26),
               KBeautySectionTitle(
                 title: 'Prestations à modérer',
@@ -159,6 +173,168 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         );
       },
     );
+  }
+
+  Widget _category(Map<String, dynamic> category) {
+    final active = category['isActive'] != false;
+    final iconName = category['icon']?.toString() ?? 'spa';
+    return KBeautyCard(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor:
+                active ? KBeautyTheme.primarySoft : KBeautyTheme.divider,
+            child: Icon(
+              kBeautyCategoryIcon(iconName),
+              color: active ? KBeautyTheme.primary : KBeautyTheme.muted,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  category['name']?.toString() ?? '',
+                  style: const TextStyle(
+                    color: KBeautyTheme.text,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  [
+                    if ((category['description']?.toString() ?? '').isNotEmpty)
+                      category['description'].toString(),
+                    'ordre ${category['sortOrder'] ?? 0}',
+                    active ? 'active' : 'masquée',
+                  ].join(' • '),
+                  style:
+                      const TextStyle(color: KBeautyTheme.muted, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Modifier',
+            onPressed: () => _categoryDialog(category),
+            icon: const Icon(Icons.edit_outlined),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _categoryDialog([Map<String, dynamic>? category]) async {
+    final isEdit = category != null;
+    final name = TextEditingController(text: category?['name']?.toString());
+    final icon = TextEditingController(
+      text: category?['icon']?.toString() ?? 'spa',
+    );
+    final description = TextEditingController(
+      text: category?['description']?.toString() ?? '',
+    );
+    final sort = TextEditingController(
+      text: (category?['sortOrder'] ?? 0).toString(),
+    );
+    var active = category?['isActive'] != false;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title:
+              Text(isEdit ? 'Modifier la catégorie' : 'Ajouter une catégorie'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: name,
+                  decoration: const InputDecoration(
+                    labelText: 'Nom',
+                    prefixIcon: Icon(Icons.category_outlined),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: icon,
+                  decoration: const InputDecoration(
+                    labelText: 'Icône',
+                    hintText: 'spa, brush, content_cut...',
+                    prefixIcon: Icon(Icons.insert_emoticon_outlined),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: description,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    prefixIcon: Icon(Icons.notes_outlined),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: sort,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Ordre',
+                    prefixIcon: Icon(Icons.sort_outlined),
+                  ),
+                ),
+                if (isEdit) ...[
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: active,
+                    title: const Text('Disponible pour les partenaires'),
+                    subtitle: const Text('Masquer sans supprimer.'),
+                    onChanged: (value) => setDialogState(() => active = value),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(isEdit ? 'Enregistrer' : 'Ajouter'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved == true) {
+      final payloadName = name.text.trim();
+      if (payloadName.isEmpty) return;
+      if (isEdit) {
+        await _manager.updateCategory(
+          id: category['id']?.toString() ?? '',
+          name: payloadName,
+          icon: icon.text.trim(),
+          description: description.text.trim(),
+          sortOrder: int.tryParse(sort.text.trim()) ?? 0,
+          isActive: active,
+        );
+      } else {
+        await _manager.createCategory(
+          name: payloadName,
+          icon: icon.text.trim(),
+          description: description.text.trim(),
+          sortOrder: int.tryParse(sort.text.trim()) ?? 0,
+        );
+      }
+    }
+
+    name.dispose();
+    icon.dispose();
+    description.dispose();
+    sort.dispose();
   }
 
   Widget _service(Map<String, dynamic> service) {

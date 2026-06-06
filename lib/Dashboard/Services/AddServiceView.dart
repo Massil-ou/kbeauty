@@ -21,17 +21,16 @@ class _AddServiceViewState extends State<AddServiceView> {
   final _subcategory = TextEditingController();
   final _price = TextEditingController();
   final _imageUrl = TextEditingController();
-  String _category = 'Coiffure';
+  String? _category;
   int _duration = 60;
 
-  static const categories = [
-    'Coiffure',
-    'Ongles',
-    'Maquillage',
-    'Massage',
-    'Épilation',
-  ];
   static const durations = [30, 45, 60, 75, 90, 120, 150, 180];
+
+  @override
+  void initState() {
+    super.initState();
+    widget.manager.serviceManager.loadCategories();
+  }
 
   @override
   void dispose() {
@@ -159,24 +158,43 @@ class _AddServiceViewState extends State<AddServiceView> {
   }
 
   Widget _detailsForm() {
+    final serviceManager = widget.manager.serviceManager;
+    final categories =
+        serviceManager.categories.map((item) => item.name).toList();
+    if (_category == null && categories.isNotEmpty) {
+      _category = categories.first;
+    }
     return KBeautyCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const KBeautySectionTitle(title: 'Tarif et catégorie'),
           const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            initialValue: _category,
-            items: categories
-                .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-                .toList(),
-            onChanged: (value) =>
-                setState(() => _category = value ?? _category),
-            decoration: const InputDecoration(
-              labelText: 'Catégorie',
-              prefixIcon: Icon(Icons.category_outlined),
+          if (serviceManager.isLoadingCategories && categories.isEmpty)
+            const KBeautySkeletonList(count: 1, compact: true)
+          else if (categories.isEmpty)
+            const KBeautyEmptyState(
+              icon: Icons.category_outlined,
+              title: 'Aucune catégorie',
+              message:
+                  'Un administrateur doit ajouter une catégorie avant publication.',
+            )
+          else
+            DropdownButtonFormField<String>(
+              initialValue: categories.contains(_category) ? _category : null,
+              items: categories
+                  .map(
+                    (item) => DropdownMenuItem(value: item, child: Text(item)),
+                  )
+                  .toList(),
+              validator: (value) =>
+                  value == null ? 'Choisissez une catégorie.' : null,
+              onChanged: (value) => setState(() => _category = value),
+              decoration: const InputDecoration(
+                labelText: 'Catégorie',
+                prefixIcon: Icon(Icons.category_outlined),
+              ),
             ),
-          ),
           const SizedBox(height: 13),
           TextFormField(
             controller: _subcategory,
@@ -230,11 +248,13 @@ class _AddServiceViewState extends State<AddServiceView> {
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    final category = _category;
+    if (category == null) return;
     final image = _imageUrl.text.trim();
     final id = await widget.manager.serviceManager.createService(
       title: _title.text.trim(),
       description: _description.text.trim(),
-      category: _category,
+      category: category,
       subcategory:
           _subcategory.text.trim().isEmpty ? null : _subcategory.text.trim(),
       price: double.parse(_price.text.replaceAll(',', '.').trim()),

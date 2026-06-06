@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../App/Manager.dart';
+import '../Shared/KBeautyCategoryIcons.dart';
 import '../Shared/KBeautyTheme.dart';
 import '../Shared/KBeautyWidgets.dart';
 import '../Shared/Models.dart';
@@ -21,17 +22,10 @@ class _OffreViewState extends State<OffreView> {
   late final _serviceManager = widget.manager.serviceManager;
   String? _selectedCategory;
 
-  static const categories = <({String label, IconData icon})>[
-    (label: 'Coiffure', icon: Icons.content_cut_rounded),
-    (label: 'Ongles', icon: Icons.back_hand_outlined),
-    (label: 'Maquillage', icon: Icons.brush_outlined),
-    (label: 'Massage', icon: Icons.spa_outlined),
-    (label: 'Épilation', icon: Icons.auto_awesome_outlined),
-  ];
-
   @override
   void initState() {
     super.initState();
+    _serviceManager.loadCategories();
     _serviceManager.searchServices();
   }
 
@@ -130,79 +124,107 @@ class _OffreViewState extends State<OffreView> {
   }
 
   Widget _categoryPicker() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const KBeautySectionTitle(
-          title: 'Explorez par catégorie',
-          subtitle: 'Des prestations sélectionnées pour chaque envie beauté.',
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 102,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: categories.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (_, index) {
-              final item = categories[index];
-              final selected = item.label == _selectedCategory;
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    _selectedCategory = selected ? null : item.label;
-                  });
-                  _search();
-                },
-                borderRadius: BorderRadius.circular(18),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: 126,
-                  padding: const EdgeInsets.all(13),
-                  decoration: BoxDecoration(
-                    color:
-                        selected ? KBeautyTheme.primary : KBeautyTheme.surface,
+    return ListenableBuilder(
+      listenable: _serviceManager,
+      builder: (context, _) {
+        final categories = _serviceManager.categories;
+        if (_serviceManager.isLoadingCategories && categories.isEmpty) {
+          return const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              KBeautySectionTitle(
+                title: 'Explorez par catégorie',
+                subtitle: 'Chargement des catégories disponibles...',
+              ),
+              SizedBox(height: 16),
+              KBeautySkeletonSlots(count: 5),
+            ],
+          );
+        }
+        if (categories.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const KBeautySectionTitle(
+              title: 'Explorez par catégorie',
+              subtitle:
+                  'Des prestations sélectionnées pour chaque envie beauté.',
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 102,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: categories.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (_, index) {
+                  final item = categories[index];
+                  final selected = item.name == _selectedCategory;
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        _selectedCategory = selected ? null : item.name;
+                      });
+                      _search();
+                    },
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: selected
-                          ? KBeautyTheme.primary
-                          : KBeautyTheme.divider,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: KBeautyTheme.primaryDark.withValues(alpha: 0.06),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        item.icon,
-                        color: selected ? Colors.white : KBeautyTheme.primary,
-                        size: 25,
-                      ),
-                      const SizedBox(height: 9),
-                      Text(
-                        item.label,
-                        style: TextStyle(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 126,
+                      padding: const EdgeInsets.all(13),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? KBeautyTheme.primary
+                            : KBeautyTheme.surface,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
                           color: selected
-                              ? Colors.white
-                              : KBeautyTheme.primaryDark,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
+                              ? KBeautyTheme.primary
+                              : KBeautyTheme.divider,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: KBeautyTheme.primaryDark.withValues(
+                              alpha: 0.06,
+                            ),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            kBeautyCategoryIcon(item.icon),
+                            color:
+                                selected ? Colors.white : KBeautyTheme.primary,
+                            size: 25,
+                          ),
+                          const SizedBox(height: 9),
+                          Text(
+                            item.name,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: selected
+                                  ? Colors.white
+                                  : KBeautyTheme.primaryDark,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

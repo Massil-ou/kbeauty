@@ -11,6 +11,7 @@ class AdminManager extends ChangeNotifier {
   Map<String, dynamic> summary = {};
   List<Map<String, dynamic>> users = [];
   List<Map<String, dynamic>> services = [];
+  List<Map<String, dynamic>> categories = [];
   List<Map<String, dynamic>> pendingPartners = [];
 
   Future<void> loadAll() async {
@@ -22,6 +23,7 @@ class AdminManager extends ChangeNotifier {
         _manager.dio.post('/kbeauty/admin/summary'),
         _manager.dio.post('/kbeauty/admin/users/list'),
         _manager.dio.post('/kbeauty/admin/services/list'),
+        _manager.dio.post('/kbeauty/admin/categories/list'),
         _manager.dio.post('/kbeauty/admin/partners/list'),
       ]);
       for (final response in responses) {
@@ -32,7 +34,8 @@ class AdminManager extends ChangeNotifier {
       summary = Map<String, dynamic>.from(responses[0].data['data'] as Map);
       users = _maps(responses[1].data['data']['users']);
       services = _maps(responses[2].data['data']['services']);
-      pendingPartners = _maps(responses[3].data['data']['items']);
+      categories = _maps(responses[3].data['data']['categories']);
+      pendingPartners = _maps(responses[4].data['data']['items']);
     } catch (e) {
       lastError = e.toString();
     } finally {
@@ -94,6 +97,56 @@ class AdminManager extends ChangeNotifier {
         '/kbeauty/admin/services/update_status',
         data: {'service_id': id, 'status': active ? 'active' : 'inactive'},
       );
+      if (response.data['success'] == true) {
+        await loadAll();
+      } else {
+        lastError = response.data['message']?.toString();
+        notifyListeners();
+      }
+    } catch (e) {
+      lastError = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> createCategory({
+    required String name,
+    required String icon,
+    String? description,
+    int sortOrder = 0,
+  }) async {
+    await _categoryAction('/kbeauty/admin/categories/create', {
+      'name': name,
+      'icon': icon,
+      'description': description,
+      'sortOrder': sortOrder,
+    });
+  }
+
+  Future<void> updateCategory({
+    required String id,
+    required String name,
+    required String icon,
+    String? description,
+    int sortOrder = 0,
+    bool isActive = true,
+  }) async {
+    await _categoryAction('/kbeauty/admin/categories/update', {
+      'id': id,
+      'name': name,
+      'icon': icon,
+      'description': description,
+      'sortOrder': sortOrder,
+      'isActive': isActive,
+    });
+  }
+
+  Future<void> _categoryAction(
+    String endpoint,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final response = await _manager.dio.post(endpoint, data: data);
       if (response.data['success'] == true) {
         await loadAll();
       } else {

@@ -53,6 +53,35 @@ class ServiceModel {
   bool get isVisible => status == 'active';
 }
 
+class ServiceCategoryModel {
+  final String id;
+  final String name;
+  final String icon;
+  final String? description;
+  final int sortOrder;
+  final bool isActive;
+
+  const ServiceCategoryModel({
+    required this.id,
+    required this.name,
+    required this.icon,
+    this.description,
+    required this.sortOrder,
+    required this.isActive,
+  });
+
+  factory ServiceCategoryModel.fromJson(Map<String, dynamic> json) {
+    return ServiceCategoryModel(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      icon: json['icon']?.toString() ?? 'spa',
+      description: json['description']?.toString(),
+      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+      isActive: json['isActive'] != false,
+    );
+  }
+}
+
 // ============================================================================
 // BOOKING & APPOINTMENT MODELS
 // ============================================================================
