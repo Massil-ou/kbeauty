@@ -89,10 +89,7 @@ class _ServiceDetailViewState extends State<ServiceDetailView> {
           return KBeautyPage(
             manager: widget.manager,
             title: 'Détails',
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 120),
-              child: Center(child: CircularProgressIndicator()),
-            ),
+            child: const KBeautyServiceDetailSkeleton(),
           );
         }
 

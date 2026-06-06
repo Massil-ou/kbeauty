@@ -57,12 +57,7 @@ class _MyServicesViewState extends State<MyServicesView> {
             ],
             const SizedBox(height: 18),
             if (_manager.isLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(60),
-                  child: CircularProgressIndicator(),
-                ),
-              )
+              const KBeautySkeletonList(count: 3, showImage: true)
             else if (_manager.ownServices.isEmpty)
               KBeautyEmptyState(
                 icon: Icons.list_alt_outlined,

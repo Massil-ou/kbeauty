@@ -82,12 +82,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                 const SizedBox(height: 18),
               ],
               if (_appointmentManager.isLoading)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 80),
-                    child: CircularProgressIndicator(),
-                  ),
-                )
+                const KBeautySkeletonList(count: 3, compact: true)
               else if (appointments.isEmpty &&
                   !(_activeTab == 'upcoming' &&
                       _bookingManager.pendingBookings.isNotEmpty))

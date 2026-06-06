@@ -47,12 +47,7 @@ class _CheckoutViewState extends State<CheckoutView> {
               _header(),
               const SizedBox(height: 18),
               if (_manager.isLoading && booking == null)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(70),
-                    child: CircularProgressIndicator(),
-                  ),
-                )
+                const KBeautySkeletonList(count: 2)
               else if (booking == null)
                 KBeautyEmptyState(
                   icon: Icons.receipt_long_outlined,

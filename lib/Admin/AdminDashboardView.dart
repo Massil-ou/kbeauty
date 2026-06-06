@@ -50,12 +50,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             ],
             const SizedBox(height: 18),
             if (_manager.isLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(70),
-                  child: CircularProgressIndicator(),
-                ),
-              )
+              const KBeautySkeletonList(count: 5, compact: true)
             else ...[
               _stats(),
               if (_manager.pendingPartners.isNotEmpty) ...[

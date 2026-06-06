@@ -192,6 +192,276 @@ class KBeautyCard extends StatelessWidget {
   }
 }
 
+class KBeautySkeletonBox extends StatefulWidget {
+  const KBeautySkeletonBox({
+    super.key,
+    this.width,
+    required this.height,
+    this.radius = 14,
+    this.margin,
+  });
+
+  final double? width;
+  final double height;
+  final double radius;
+  final EdgeInsetsGeometry? margin;
+
+  @override
+  State<KBeautySkeletonBox> createState() => _KBeautySkeletonBoxState();
+}
+
+class _KBeautySkeletonBoxState extends State<KBeautySkeletonBox>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 950),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 0.38, end: 0.86).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: Container(
+        width: widget.width,
+        height: widget.height,
+        margin: widget.margin,
+        decoration: BoxDecoration(
+          color: KBeautyTheme.primarySoft,
+          borderRadius: BorderRadius.circular(widget.radius),
+        ),
+      ),
+    );
+  }
+}
+
+class KBeautySkeletonCard extends StatelessWidget {
+  const KBeautySkeletonCard({
+    super.key,
+    this.showImage = false,
+    this.compact = false,
+  });
+
+  final bool showImage;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return KBeautyCard(
+      margin: const EdgeInsets.only(bottom: 13),
+      child: showImage
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const KBeautySkeletonBox(width: 92, height: 92),
+                const SizedBox(width: 14),
+                Expanded(child: _lines()),
+              ],
+            )
+          : _lines(),
+    );
+  }
+
+  Widget _lines() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const KBeautySkeletonBox(width: 180, height: 18),
+        const SizedBox(height: 10),
+        const KBeautySkeletonBox(height: 12),
+        const SizedBox(height: 8),
+        KBeautySkeletonBox(height: 12, width: compact ? 160 : null),
+        if (!compact) ...[
+          const SizedBox(height: 16),
+          const Row(
+            children: [
+              KBeautySkeletonBox(width: 86, height: 26, radius: 999),
+              SizedBox(width: 8),
+              KBeautySkeletonBox(width: 112, height: 26, radius: 999),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class KBeautySkeletonList extends StatelessWidget {
+  const KBeautySkeletonList({
+    super.key,
+    this.count = 3,
+    this.showImage = false,
+    this.compact = false,
+  });
+
+  final int count;
+  final bool showImage;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: List.generate(
+        count,
+        (_) => KBeautySkeletonCard(showImage: showImage, compact: compact),
+      ),
+    );
+  }
+}
+
+class KBeautySkeletonGrid extends StatelessWidget {
+  const KBeautySkeletonGrid({super.key, this.count = 6});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final columns = width >= 1020
+            ? 3
+            : width >= 650
+                ? 2
+                : 1;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: count,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: 18,
+            crossAxisSpacing: 18,
+            mainAxisExtent: columns == 1 ? 355 : 380,
+          ),
+          itemBuilder: (_, __) => const KBeautyCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                KBeautySkeletonBox(height: 170),
+                SizedBox(height: 16),
+                KBeautySkeletonBox(width: 190, height: 18),
+                SizedBox(height: 10),
+                KBeautySkeletonBox(height: 12),
+                SizedBox(height: 8),
+                KBeautySkeletonBox(width: 170, height: 12),
+                Spacer(),
+                Row(
+                  children: [
+                    KBeautySkeletonBox(width: 94, height: 28, radius: 999),
+                    Spacer(),
+                    KBeautySkeletonBox(width: 70, height: 28, radius: 999),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class KBeautySkeletonSlots extends StatelessWidget {
+  const KBeautySkeletonSlots({super.key, this.count = 10});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 9,
+      runSpacing: 9,
+      children: List.generate(
+        count,
+        (_) => const KBeautySkeletonBox(width: 78, height: 38, radius: 999),
+      ),
+    );
+  }
+}
+
+class KBeautyServiceDetailSkeleton extends StatelessWidget {
+  const KBeautyServiceDetailSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const image = KBeautySkeletonBox(height: 360, radius: 24);
+        const content = KBeautyCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              KBeautySkeletonBox(width: 240, height: 24),
+              SizedBox(height: 14),
+              KBeautySkeletonBox(height: 12),
+              SizedBox(height: 8),
+              KBeautySkeletonBox(height: 12),
+              SizedBox(height: 8),
+              KBeautySkeletonBox(width: 210, height: 12),
+              SizedBox(height: 20),
+              Row(
+                children: [
+                  KBeautySkeletonBox(width: 94, height: 30, radius: 999),
+                  SizedBox(width: 8),
+                  KBeautySkeletonBox(width: 120, height: 30, radius: 999),
+                ],
+              ),
+              SizedBox(height: 22),
+              KBeautySkeletonBox(height: 48, radius: 16),
+            ],
+          ),
+        );
+        if (constraints.maxWidth >= 820) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: image),
+              const SizedBox(width: 18),
+              Expanded(child: content),
+            ],
+          );
+        }
+        return const Column(
+          children: [
+            KBeautySkeletonBox(height: 300, radius: 24),
+            SizedBox(height: 16),
+            KBeautyCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  KBeautySkeletonBox(width: 240, height: 24),
+                  SizedBox(height: 14),
+                  KBeautySkeletonBox(height: 12),
+                  SizedBox(height: 8),
+                  KBeautySkeletonBox(width: 210, height: 12),
+                  SizedBox(height: 20),
+                  KBeautySkeletonBox(height: 48, radius: 16),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class KBeautySectionTitle extends StatelessWidget {
   const KBeautySectionTitle({
     super.key,

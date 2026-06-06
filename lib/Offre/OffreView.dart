@@ -211,6 +211,30 @@ class _OffreViewState extends State<OffreView> {
       listenable: _serviceManager,
       builder: (context, _) {
         final offers = _serviceManager.services.take(8).toList();
+        if (_serviceManager.isLoading && offers.isEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const KBeautySectionTitle(
+                title: 'À découvrir aujourd’hui',
+                subtitle: 'Préparation de vos offres beauté...',
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 245,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: 4,
+                  separatorBuilder: (_, __) => const SizedBox(width: 13),
+                  itemBuilder: (_, __) => const SizedBox(
+                    width: 300,
+                    child: KBeautySkeletonCard(),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
         if (offers.isEmpty) return const SizedBox.shrink();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,12 +291,7 @@ class _OffreViewState extends State<OffreView> {
             ),
             const SizedBox(height: 18),
             if (_serviceManager.isLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 42),
-                  child: CircularProgressIndicator(),
-                ),
-              )
+              const KBeautySkeletonGrid()
             else if (_serviceManager.services.isEmpty)
               KBeautyEmptyState(
                 icon: Icons.search_off_rounded,

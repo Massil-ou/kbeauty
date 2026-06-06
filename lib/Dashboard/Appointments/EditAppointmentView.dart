@@ -152,7 +152,7 @@ class _EditAppointmentViewState extends State<EditAppointmentView> {
                                 icon: Icons.lock_clock_outlined,
                               )
                             else if (_availability.isLoading)
-                              const Center(child: CircularProgressIndicator())
+                              const KBeautySkeletonSlots(count: 8)
                             else
                               Wrap(
                                 spacing: 8,

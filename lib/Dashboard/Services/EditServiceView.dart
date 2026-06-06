@@ -96,7 +96,7 @@ class _EditServiceViewState extends State<EditServiceView> {
           title: 'Modifier la prestation',
           child: service == null
               ? _manager.isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const KBeautySkeletonList(count: 1)
                   : const KBeautyEmptyState(
                       icon: Icons.search_off_rounded,
                       title: 'Prestation introuvable',

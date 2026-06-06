@@ -121,12 +121,7 @@ class _TimeSlotPickerViewState extends State<TimeSlotPickerView> {
                   ),
                   const SizedBox(height: 18),
                   if (_availabilityManager.isLoading)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(28),
-                        child: CircularProgressIndicator(),
-                      ),
-                    )
+                    const KBeautySkeletonSlots()
                   else if (_availabilityManager.slots.isEmpty)
                     KBeautyEmptyState(
                       icon: Icons.event_busy_outlined,
