@@ -537,7 +537,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   case 'suspended':
                     _manager.updateUserStatus(id, action);
                   case 'client':
-                  case 'partner':
+                  case 'beautician':
                     _manager.updateUserRole(id, action);
                 }
               },
@@ -547,8 +547,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 PopupMenuDivider(),
                 PopupMenuItem(value: 'client', child: Text('Passer client')),
                 PopupMenuItem(
-                  value: 'partner',
-                  child: Text('Passer partenaire'),
+                  value: 'beautician',
+                  child: Text('Passer professionnelle'),
                 ),
               ],
               child: KBeautyStatusChip(

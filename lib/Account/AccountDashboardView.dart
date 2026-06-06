@@ -63,7 +63,8 @@ class _AccountDashboardViewState extends State<AccountDashboardView> {
         subtitle:
             'Vous avez uniquement les accès d’administration et de contrôle.',
         sectionTitle: 'Menu administrateur',
-        sectionSubtitle: 'Validation des partners, modération et utilisateurs.',
+        sectionSubtitle:
+            'Validation des professionnelles, modération et utilisateurs.',
         icon: Icons.admin_panel_settings_outlined,
       );
     }
@@ -73,7 +74,7 @@ class _AccountDashboardViewState extends State<AccountDashboardView> {
         title: 'Votre activité beauté',
         subtitle:
             'Gérez vos prestations, vos demandes clientes et votre profil visible.',
-        sectionTitle: 'Menu partner',
+        sectionTitle: 'Menu professionnelle',
         sectionSubtitle: 'Tout ce qui sert à vendre et gérer vos services.',
         icon: Icons.spa_outlined,
       );
@@ -171,7 +172,7 @@ class _AccountDashboardViewState extends State<AccountDashboardView> {
       ),
       _Shortcut(
         'Devenir pro',
-        'Créer votre dossier partner et attendre la validation admin.',
+        'Créer votre dossier professionnel et attendre la validation admin.',
         Icons.workspace_premium_outlined,
         '/account/profile?section=pro',
         KBeautyTheme.success,

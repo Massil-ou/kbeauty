@@ -71,7 +71,8 @@ class AccountManager extends ChangeNotifier {
         if (data is Map &&
             data['isPartner'] == true &&
             !_manager.isBeauticianhRole) {
-          await _manager.updateLocalRole(data['role']?.toString() ?? 'partner');
+          await _manager
+              .updateLocalRole(data['role']?.toString() ?? 'beautician');
         }
       } else {
         lastError = response.data['message']?.toString();
@@ -102,7 +103,7 @@ class AccountManager extends ChangeNotifier {
             payload['isPartner'] == true &&
             !_manager.isBeauticianhRole) {
           await _manager
-              .updateLocalRole(payload['role']?.toString() ?? 'partner');
+              .updateLocalRole(payload['role']?.toString() ?? 'beautician');
         }
         notifyListeners();
         return true;

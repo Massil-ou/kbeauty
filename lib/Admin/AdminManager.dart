@@ -63,17 +63,17 @@ class AdminManager extends ChangeNotifier {
   }
 
   Future<void> updateUserStatus(String userId, String status) =>
-      _updateCutomaUser(
-        '/cutoma/admin/users/update_status',
-        {'iduser': userId, 'status_user': status},
+      _updateKBeautyUser(
+        '/kbeauty/admin/users/update_status',
+        {'user_id': userId, 'status': status},
       );
 
-  Future<void> updateUserRole(String userId, String role) => _updateCutomaUser(
-        '/cutoma/admin/users/update_role',
-        {'iduser': userId, 'role_user': role},
+  Future<void> updateUserRole(String userId, String role) => _updateKBeautyUser(
+        '/kbeauty/admin/users/update_role',
+        {'user_id': userId, 'role': role},
       );
 
-  Future<void> _updateCutomaUser(
+  Future<void> _updateKBeautyUser(
     String endpoint,
     Map<String, dynamic> data,
   ) async {

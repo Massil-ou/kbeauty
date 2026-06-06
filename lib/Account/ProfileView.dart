@@ -432,8 +432,8 @@ class _ProfileViewState extends State<ProfileView> {
             number: '3',
             title: 'Publier vos prestations',
             text: _account.isProApproved
-                ? 'Votre espace partner est actif.'
-                : 'Après validation, le menu partner sera débloqué.',
+                ? 'Votre espace professionnel est actif.'
+                : 'Après validation, le menu professionnel sera débloqué.',
             isLast: true,
           ),
         ],

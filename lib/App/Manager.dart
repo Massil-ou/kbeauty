@@ -51,18 +51,15 @@ class Manager extends ChangeNotifier {
   bool get isAuthenticated =>
       _accessToken?.isNotEmpty == true && _deviceHeader?.isNotEmpty == true;
   String? get currentUserId => _currentUserId;
-  String get currentUserRole => (_currentUserRole ?? '').toLowerCase().trim();
+  String get currentUserRole => _normalizeRole(_currentUserRole);
   String get currentUserEmail => _currentEmail;
   String get currentUserPhone => _currentPhone;
   String get currentUserName => '$_currentFirstName $_currentLastName'.trim();
   String? get refreshToken => _refreshToken;
   bool get isClientRole => currentUserRole == 'client';
   bool get isAdminRole => currentUserRole == 'admin';
-  bool get isBeauticianhRole =>
-      currentUserRole == 'beautician' ||
-      currentUserRole == 'partner' ||
-      currentUserRole == 'manager';
-  bool get isManagerRole => currentUserRole == 'manager';
+  bool get isBeauticianhRole => currentUserRole == 'beautician';
+  bool get isManagerRole => false;
 
   Future<void> bootstrap() async {
     _preferences = await SharedPreferences.getInstance();
@@ -127,7 +124,7 @@ class Manager extends ChangeNotifier {
     _accessToken = access;
     _refreshToken = refresh;
     _currentUserId = _readUserIdFromAccessToken(access);
-    _currentUserRole = user['role']?.toString() ?? 'client';
+    _currentUserRole = _normalizeRole(user['role']?.toString());
     _currentFirstName = user['first_name']?.toString() ?? '';
     _currentLastName = user['last_name']?.toString() ?? '';
     _currentEmail = user['email']?.toString() ?? '';
@@ -138,7 +135,7 @@ class Manager extends ChangeNotifier {
       prefs.setString(_accessKey, _accessToken ?? ''),
       prefs.setString(_refreshKey, _refreshToken ?? ''),
       prefs.setString(_userIdKey, _currentUserId ?? ''),
-      prefs.setString(_roleKey, _currentUserRole ?? ''),
+      prefs.setString(_roleKey, currentUserRole),
       prefs.setString(_firstNameKey, _currentFirstName),
       prefs.setString(_lastNameKey, _currentLastName),
       prefs.setString(_emailKey, _currentEmail),
@@ -156,7 +153,7 @@ class Manager extends ChangeNotifier {
     _accessToken = accessToken.trim();
     _deviceHeader = deviceToken.trim();
     _currentUserId = userId.trim();
-    _currentUserRole = role.trim();
+    _currentUserRole = _normalizeRole(role);
     notifyListeners();
   }
 
@@ -202,12 +199,25 @@ class Manager extends ChangeNotifier {
   }
 
   Future<void> updateLocalRole(String role) async {
-    final normalized = role.trim().toLowerCase();
+    final normalized = _normalizeRole(role);
     if (normalized.isEmpty || normalized == currentUserRole) return;
     _currentUserRole = normalized;
     final prefs = _preferences ?? await SharedPreferences.getInstance();
     await prefs.setString(_roleKey, normalized);
     notifyListeners();
+  }
+
+  String _normalizeRole(String? role) {
+    switch ((role ?? '').trim().toLowerCase()) {
+      case 'admin':
+        return 'admin';
+      case 'beautician':
+      case 'partner':
+      case 'manager':
+        return 'beautician';
+      default:
+        return 'client';
+    }
   }
 
   AccountManager? _accountManager;
