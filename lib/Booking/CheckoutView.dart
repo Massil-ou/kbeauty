@@ -109,7 +109,7 @@ class _CheckoutViewState extends State<CheckoutView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             KBeautyStatusChip(
-              label: 'Checkout kBeauty',
+              label: 'Checkout keauty',
               color: Colors.white,
               icon: Icons.lock_outline_rounded,
             ),
@@ -179,7 +179,7 @@ class _CheckoutViewState extends State<CheckoutView> {
             const KBeautySectionTitle(
               title: 'Paiement par carte',
               subtitle:
-                  'Vous serez redirigé vers Stripe. Vos données bancaires ne transitent pas par kBeauty.',
+                  'Vous serez redirigé vers Stripe. Vos données bancaires ne transitent pas par keauty.',
             ),
             const SizedBox(height: 18),
             Container(

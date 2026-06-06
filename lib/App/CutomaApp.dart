@@ -185,7 +185,7 @@ class _KBeautyAppState extends State<KBeautyApp> {
     return MaterialApp.router(
       routerConfig: _router,
       debugShowCheckedModeBanner: false,
-      title: 'kBeauty',
+      title: 'keauty',
       theme: KBeautyTheme.theme(),
     );
   }

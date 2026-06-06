@@ -97,7 +97,7 @@ class KBeautyAccountMenu extends StatelessWidget {
               children: [
                 Text(
                   manager.currentUserName.isEmpty
-                      ? 'Mon compte kBeauty'
+                      ? 'Mon compte keauty'
                       : manager.currentUserName,
                   style: const TextStyle(
                     color: Colors.white,

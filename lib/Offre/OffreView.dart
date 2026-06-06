@@ -856,7 +856,7 @@ class _PartnerCallout extends StatelessWidget {
                 ),
                 SizedBox(height: 7),
                 Text(
-                  'Les partenaires kBeauty validées accèdent à leur espace professionnel pour publier leurs prestations et gérer leurs rendez-vous.',
+                  'Les partenaires keauty validées accèdent à leur espace professionnel pour publier leurs prestations et gérer leurs rendez-vous.',
                   style: TextStyle(color: Colors.white70, height: 1.45),
                 ),
               ],

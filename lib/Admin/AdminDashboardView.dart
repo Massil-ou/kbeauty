@@ -40,7 +40,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const KBeautySectionTitle(
-              title: 'Pilotage kBeauty',
+              title: 'Pilotage keauty',
               subtitle:
                   'Vue d’ensemble, utilisateurs et modération des prestations.',
             ),
@@ -306,7 +306,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             Text(approve ? 'Valider le partenaire ?' : 'Refuser la demande ?'),
         content: Text(
           approve
-              ? '$company pourra publier et gérer ses prestations kBeauty.'
+              ? '$company pourra publier et gérer ses prestations keauty.'
               : '$company pourra corriger son dossier puis envoyer une nouvelle demande.',
         ),
         actions: [

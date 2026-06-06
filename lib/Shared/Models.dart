@@ -1,4 +1,4 @@
-// kBeauty Data Models
+// keauty Data Models
 
 // ============================================================================
 // SERVICE MODELS

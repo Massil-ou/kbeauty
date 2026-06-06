@@ -42,7 +42,7 @@ class AccountDashboardView extends StatelessWidget {
     if (manager.isAdminRole) {
       return const _RoleDashboard(
         chip: 'Admin',
-        title: 'Pilotage kBeauty',
+        title: 'Pilotage keauty',
         subtitle:
             'Vous avez uniquement les accès d’administration et de contrôle.',
         sectionTitle: 'Menu administrateur',

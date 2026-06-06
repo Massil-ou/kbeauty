@@ -61,7 +61,7 @@ class AuthScaffold extends StatelessWidget {
                       ),
                       const SizedBox(width: 9),
                       const Text(
-                        'kBeauty',
+                        'keauty',
                         style: TextStyle(
                           color: KBeautyTheme.primaryDark,
                           fontWeight: FontWeight.w900,

@@ -59,7 +59,7 @@ class KBeautyHeader extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   const SizedBox(width: 9),
                   Text(
-                    title ?? 'kBeauty',
+                    title ?? 'keauty',
                     style: const TextStyle(
                       color: KBeautyTheme.primaryDark,
                       fontSize: 21,
