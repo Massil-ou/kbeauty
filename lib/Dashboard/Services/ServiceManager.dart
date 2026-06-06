@@ -14,9 +14,11 @@ class ServiceManager extends ChangeNotifier {
   // =========================================================================
 
   List<ServiceModel> services = [];
+  List<ServiceModel> featuredServices = [];
   List<ServiceModel> ownServices = [];
   List<ServiceCategoryModel> categories = [];
   bool isLoading = false;
+  bool isLoadingFeatured = false;
   bool isLoadingCategories = false;
   bool isSaving = false;
   bool hasMore = false;
@@ -52,6 +54,33 @@ class ServiceManager extends ChangeNotifier {
       lastError = e.toString();
     } finally {
       isLoadingCategories = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadFeaturedServices() async {
+    if (isLoadingFeatured) return;
+    isLoadingFeatured = true;
+    notifyListeners();
+    try {
+      final response = await _manager.dio.post(
+        '/kbeauty/services/featured',
+        data: {'limit': 8},
+      );
+      if (response.data['success'] == true) {
+        featuredServices = (response.data['data']['services'] as List? ?? [])
+            .whereType<Map>()
+            .map((item) =>
+                ServiceModel.fromJson(Map<String, dynamic>.from(item)))
+            .toList();
+        lastError = null;
+      } else {
+        lastError = response.data['message']?.toString();
+      }
+    } catch (e) {
+      lastError = e.toString();
+    } finally {
+      isLoadingFeatured = false;
       notifyListeners();
     }
   }

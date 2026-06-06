@@ -27,6 +27,7 @@ class _OffreViewState extends State<OffreView> {
   void initState() {
     super.initState();
     _serviceManager.loadCategories();
+    _serviceManager.loadFeaturedServices();
   }
 
   @override
@@ -159,7 +160,7 @@ class _OffreViewState extends State<OffreView> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const KBeautySectionTitle(
+            KBeautySectionTitle(
               title: 'Explorez par catégorie',
               subtitle:
                   'Des prestations sélectionnées pour chaque envie beauté.',
@@ -246,8 +247,11 @@ class _OffreViewState extends State<OffreView> {
     return ListenableBuilder(
       listenable: _serviceManager,
       builder: (context, _) {
-        final offers = _serviceManager.services.take(8).toList();
-        if (_serviceManager.isLoading && offers.isEmpty) {
+        final offers = _serviceManager.activeSearchCity == null
+            ? _serviceManager.featuredServices.take(8).toList()
+            : _serviceManager.services.take(8).toList();
+        if ((_serviceManager.isLoadingFeatured || _serviceManager.isLoading) &&
+            offers.isEmpty) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -275,10 +279,11 @@ class _OffreViewState extends State<OffreView> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const KBeautySectionTitle(
+            KBeautySectionTitle(
               title: 'À découvrir aujourd’hui',
-              subtitle:
-                  'Des offres mises en avant, à parcourir comme votre sélection préférée.',
+              subtitle: _serviceManager.activeSearchCity == null
+                  ? 'Des annonces visibles en vitrine. Recherchez votre ville avant de réserver.'
+                  : 'Des offres disponibles dans votre zone de recherche.',
             ),
             const SizedBox(height: 16),
             SizedBox(

@@ -32,6 +32,10 @@ class _ServiceDetailViewState extends State<ServiceDetailView> {
   void _book() {
     final service = _serviceManager.selectedService;
     if (service == null) return;
+    if ((_serviceManager.activeSearchCity ?? '').trim().isEmpty) {
+      _showSearchRequired();
+      return;
+    }
     if (!widget.manager.isAuthenticated) {
       _showAuthRequired();
       return;
@@ -42,6 +46,34 @@ class _ServiceDetailViewState extends State<ServiceDetailView> {
         'service_id': service.id,
         'beautician_id': service.beautician.id,
       },
+    );
+  }
+
+  Future<void> _showSearchRequired() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(
+          Icons.location_city_outlined,
+          color: KBeautyTheme.primary,
+          size: 32,
+        ),
+        title: const Text('Recherchez d’abord votre ville'),
+        content: const Text(
+          'Cette annonce est visible en vitrine. Pour réserver, lancez une recherche avec votre ville afin de vérifier que la professionnelle couvre bien votre zone.',
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              this.context.go('/');
+            },
+            child: const Text('Faire une recherche'),
+          ),
+        ],
+      ),
     );
   }
 
