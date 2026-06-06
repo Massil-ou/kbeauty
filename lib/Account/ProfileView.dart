@@ -224,6 +224,8 @@ class _ProfileViewState extends State<ProfileView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _proGuide(),
+              const SizedBox(height: 18),
               KBeautySectionTitle(
                 title: _account.proProfile == null
                     ? 'Devenir professionnelle'
@@ -345,6 +347,94 @@ class _ProfileViewState extends State<ProfileView> {
           ),
         ),
       );
+
+  Widget _proGuide() {
+    final status = _account.isProApproved
+        ? 'Validé'
+        : _account.isProRejected
+            ? 'À corriger'
+            : _account.isProPending
+                ? 'En validation'
+                : 'À démarrer';
+    final color = _account.isProApproved
+        ? KBeautyTheme.success
+        : _account.isProRejected
+            ? KBeautyTheme.danger
+            : _account.isProPending
+                ? KBeautyTheme.gold
+                : KBeautyTheme.primary;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: KBeautyTheme.primarySoft.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: KBeautyTheme.primary.withValues(alpha: 0.10)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Icon(
+                  Icons.workspace_premium_outlined,
+                  color: KBeautyTheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Comment devenir pro ?',
+                      style: TextStyle(
+                        color: KBeautyTheme.text,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'Le parcours est simple et validé par l’administration.',
+                      style: TextStyle(
+                        color: KBeautyTheme.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              KBeautyStatusChip(label: status, color: color),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const _ProStep(
+            number: '1',
+            title: 'Remplir le dossier',
+            text: 'Entreprise, nom commercial et informations légales.',
+          ),
+          _ProStep(
+            number: '2',
+            title: 'Validation admin',
+            text: _account.isProPending
+                ? 'Votre dossier est envoyé. Attendez la validation.'
+                : 'Un administrateur vérifie votre demande.',
+          ),
+          _ProStep(
+            number: '3',
+            title: 'Publier vos prestations',
+            text: _account.isProApproved
+                ? 'Votre espace partner est actif.'
+                : 'Après validation, le menu partner sera débloqué.',
+            isLast: true,
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _beautyForm() => Form(
         key: _beautyKey,
@@ -555,6 +645,82 @@ class _ProfileViewState extends State<ProfileView> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ProStep extends StatelessWidget {
+  const _ProStep({
+    required this.number,
+    required this.title,
+    required this.text,
+    this.isLast = false,
+  });
+
+  final String number;
+  final String title;
+  final String text;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                number,
+                style: const TextStyle(
+                  color: KBeautyTheme.primary,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            if (!isLast)
+              Container(
+                width: 2,
+                height: 28,
+                color: KBeautyTheme.primary.withValues(alpha: 0.16),
+              ),
+          ],
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: KBeautyTheme.text,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  text,
+                  style: const TextStyle(
+                    color: KBeautyTheme.muted,
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
