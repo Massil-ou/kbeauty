@@ -4,11 +4,25 @@ import 'package:go_router/go_router.dart';
 import '../App/Manager.dart';
 import '../Shared/KBeautyTheme.dart';
 import '../Shared/KBeautyWidgets.dart';
+import '../Shared/Models.dart';
 
-class AccountDashboardView extends StatelessWidget {
+class AccountDashboardView extends StatefulWidget {
   const AccountDashboardView({super.key, required this.manager});
 
   final Manager manager;
+
+  @override
+  State<AccountDashboardView> createState() => _AccountDashboardViewState();
+}
+
+class _AccountDashboardViewState extends State<AccountDashboardView> {
+  Manager get manager => widget.manager;
+
+  @override
+  void initState() {
+    super.initState();
+    manager.serviceManager.loadFeaturedServices();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +47,8 @@ class AccountDashboardView extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _shortcutGrid(context, cards),
+          const SizedBox(height: 28),
+          _featuredOffers(context),
         ],
       ),
     );
@@ -325,6 +341,186 @@ class AccountDashboardView extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  Widget _featuredOffers(BuildContext context) {
+    final serviceManager = manager.serviceManager;
+    return ListenableBuilder(
+      listenable: serviceManager,
+      builder: (context, _) {
+        final offers = serviceManager.featuredServices.take(8).toList();
+        if (serviceManager.isLoadingFeatured && offers.isEmpty) {
+          return const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              KBeautySectionTitle(
+                title: 'Annonces à découvrir',
+                subtitle: 'Préparation de votre vitrine beauté...',
+              ),
+              SizedBox(height: 16),
+              SizedBox(
+                height: 205,
+                child: Row(
+                  children: [
+                    Expanded(child: KBeautySkeletonCard()),
+                    SizedBox(width: 12),
+                    Expanded(child: KBeautySkeletonCard()),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+        if (offers.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const KBeautySectionTitle(
+              title: 'Annonces à découvrir',
+              subtitle:
+                  'Elles restent visibles dans votre espace. Pour réserver, lancez une recherche avec votre ville.',
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 235,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: offers.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 13),
+                itemBuilder: (_, index) => _DashboardOfferCard(
+                  service: offers[index],
+                  onTap: () => context.pushNamed(
+                    'service_detail',
+                    pathParameters: {'id': offers[index].id},
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: () => context.go('/'),
+              icon: const Icon(Icons.location_city_outlined),
+              label: const Text('Rechercher par ville pour réserver'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _DashboardOfferCard extends StatelessWidget {
+  const _DashboardOfferCard({required this.service, required this.onTap});
+
+  final ServiceModel service;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        width: MediaQuery.sizeOf(context).width < 620 ? 280 : 330,
+        clipBehavior: Clip.antiAlias,
+        decoration: KBeautyTheme.cardDecoration(radius: 22),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (service.images.isNotEmpty)
+              Image.network(
+                service.images.first,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const _DashboardOfferFallback(),
+              )
+            else
+              const _DashboardOfferFallback(),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Color(0xE6000000)],
+                  stops: [0.28, 1],
+                ),
+              ),
+            ),
+            Positioned(
+              top: 13,
+              left: 13,
+              child: KBeautyStatusChip(
+                label: service.category,
+                color: Colors.white,
+              ),
+            ),
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    service.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 19,
+                      height: 1.1,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${service.beautician.businessName} • ${service.durationMinutes} min',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${service.price.toStringAsFixed(0)} €',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardOfferFallback extends StatelessWidget {
+  const _DashboardOfferFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: KBeautyTheme.primarySoft,
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.spa_outlined,
+        color: KBeautyTheme.primary,
+        size: 44,
+      ),
     );
   }
 }
