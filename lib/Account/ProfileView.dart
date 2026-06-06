@@ -49,6 +49,7 @@ class _ProfileViewState extends State<ProfileView> {
   final _experience = TextEditingController(text: '0');
   final _professionalPhone = TextEditingController();
   final _profileImageUrl = TextEditingController();
+  final _serviceCities = TextEditingController();
   bool _hydratedPro = false;
   bool _hydratedBeauty = false;
 
@@ -85,6 +86,7 @@ class _ProfileViewState extends State<ProfileView> {
       _experience.text = p.experienceYears.toString();
       _professionalPhone.text = p.phone ?? widget.manager.currentUserPhone;
       _profileImageUrl.text = p.profileImageUrl ?? '';
+      _serviceCities.text = p.serviceCities.join(', ');
       _hydratedBeauty = true;
     }
   }
@@ -109,6 +111,7 @@ class _ProfileViewState extends State<ProfileView> {
       _experience,
       _professionalPhone,
       _profileImageUrl,
+      _serviceCities,
     ]) {
       controller.dispose();
     }
@@ -486,6 +489,21 @@ class _ProfileViewState extends State<ProfileView> {
                 required: false,
                 keyboard: TextInputType.url,
               ),
+              const SizedBox(height: 12),
+              _field(
+                _serviceCities,
+                'Villes d’intervention séparées par des virgules',
+                Icons.location_city_outlined,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Exemple : Paris, Boulogne-Billancourt. Les clientes ne pourront réserver que dans ces villes.',
+                style: TextStyle(
+                  color: KBeautyTheme.muted,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
               const SizedBox(height: 18),
               _saveButton(
                 loading: _beauty.isSaving,
@@ -573,6 +591,11 @@ class _ProfileViewState extends State<ProfileView> {
       experienceYears: int.tryParse(_experience.text.trim()) ?? 0,
       phone: _professionalPhone.text.trim(),
       profileImageUrl: _profileImageUrl.text.trim(),
+      serviceCities: _serviceCities.text
+          .split(',')
+          .map((item) => item.trim())
+          .where((item) => item.isNotEmpty)
+          .toList(),
     );
     _toast(ok ? 'Profil beauté enregistré.' : _beauty.lastError ?? 'Erreur.');
   }

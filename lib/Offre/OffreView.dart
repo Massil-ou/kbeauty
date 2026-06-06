@@ -19,6 +19,7 @@ class OffreView extends StatefulWidget {
 class _OffreViewState extends State<OffreView> {
   static const _maxWidth = 1180.0;
   final _searchCtrl = TextEditingController();
+  final _cityCtrl = TextEditingController();
   late final _serviceManager = widget.manager.serviceManager;
   String? _selectedCategory;
 
@@ -26,29 +27,41 @@ class _OffreViewState extends State<OffreView> {
   void initState() {
     super.initState();
     _serviceManager.loadCategories();
-    _serviceManager.searchServices();
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _cityCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _search() async {
     FocusScope.of(context).unfocus();
+    final city = _cityCtrl.text.trim();
+    if (city.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Indiquez votre ville pour voir les offres disponibles.'),
+        ),
+      );
+      return;
+    }
     await _serviceManager.searchServices(
       query: _searchCtrl.text.trim().isEmpty ? null : _searchCtrl.text.trim(),
       category: _selectedCategory,
+      city: city,
     );
   }
 
   Future<void> _reset() async {
     setState(() {
       _searchCtrl.clear();
+      _cityCtrl.clear();
       _selectedCategory = null;
     });
-    await _serviceManager.searchServices();
+    _serviceManager.clearSearch();
   }
 
   @override
@@ -68,6 +81,7 @@ class _OffreViewState extends State<OffreView> {
                 children: [
                   _Hero(
                     controller: _searchCtrl,
+                    cityController: _cityCtrl,
                     onSearch: _search,
                     manager: widget.manager,
                   ),
@@ -302,8 +316,12 @@ class _OffreViewState extends State<OffreView> {
               title: _selectedCategory ?? 'Prestations recommandées',
               subtitle: _serviceManager.isLoading
                   ? 'Recherche en cours...'
-                  : '${_serviceManager.services.length} prestation(s) disponible(s)',
-              trailing: _selectedCategory != null || _searchCtrl.text.isNotEmpty
+                  : _serviceManager.activeSearchCity == null
+                      ? 'Choisissez d’abord votre ville pour éviter les rendez-vous hors zone.'
+                      : '${_serviceManager.services.length} prestation(s) disponible(s) à ${_serviceManager.activeSearchCity}',
+              trailing: _selectedCategory != null ||
+                      _searchCtrl.text.isNotEmpty ||
+                      _cityCtrl.text.isNotEmpty
                   ? TextButton.icon(
                       onPressed: _reset,
                       icon: const Icon(Icons.close, size: 17),
@@ -314,6 +332,19 @@ class _OffreViewState extends State<OffreView> {
             const SizedBox(height: 18),
             if (_serviceManager.isLoading)
               const KBeautySkeletonGrid()
+            else if (_serviceManager.activeSearchCity == null &&
+                _serviceManager.services.isEmpty)
+              KBeautyEmptyState(
+                icon: Icons.location_city_outlined,
+                title: 'Choisissez votre ville',
+                message:
+                    'Les offres sont filtrées par zone d’intervention. Cela évite de réserver une prestation trop loin de chez vous.',
+                action: ElevatedButton.icon(
+                  onPressed: _search,
+                  icon: const Icon(Icons.search_rounded),
+                  label: const Text('Rechercher dans ma ville'),
+                ),
+              )
             else if (_serviceManager.services.isEmpty)
               KBeautyEmptyState(
                 icon: Icons.search_off_rounded,
@@ -322,7 +353,7 @@ class _OffreViewState extends State<OffreView> {
                     'Essayez une autre recherche ou retirez les filtres.',
                 action: OutlinedButton(
                   onPressed: _reset,
-                  child: const Text('Voir toutes les prestations'),
+                  child: const Text('Changer de recherche'),
                 ),
               )
             else
@@ -375,11 +406,13 @@ class _OffreViewState extends State<OffreView> {
 class _Hero extends StatelessWidget {
   const _Hero({
     required this.controller,
+    required this.cityController,
     required this.onSearch,
     required this.manager,
   });
 
   final TextEditingController controller;
+  final TextEditingController cityController;
   final Future<void> Function() onSearch;
   final Manager manager;
 
@@ -421,7 +454,7 @@ class _Hero extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Trouvez une professionnelle vérifiée et réservez votre prochain rendez-vous.',
+                      'Indiquez votre ville pour afficher uniquement les professionnelles qui couvrent votre zone.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.86),
@@ -447,6 +480,31 @@ class _Hero extends StatelessWidget {
                       child: Row(
                         children: [
                           Expanded(
+                            flex: 5,
+                            child: TextField(
+                              controller: cityController,
+                              onSubmitted: (_) => onSearch(),
+                              textInputAction: TextInputAction.next,
+                              decoration: const InputDecoration(
+                                hintText: 'Votre ville',
+                                prefixIcon: Icon(
+                                  Icons.location_city_outlined,
+                                  color: KBeautyTheme.primary,
+                                ),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                filled: false,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: 1,
+                            height: 34,
+                            color: KBeautyTheme.divider,
+                          ),
+                          Expanded(
+                            flex: 7,
                             child: TextField(
                               controller: controller,
                               onSubmitted: (_) => onSearch(),

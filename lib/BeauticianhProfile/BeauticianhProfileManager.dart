@@ -39,6 +39,7 @@ class BeauticianhProfileManager extends ChangeNotifier {
     required int experienceYears,
     required String phone,
     required String profileImageUrl,
+    required List<String> serviceCities,
   }) async {
     isSaving = true;
     lastError = null;
@@ -52,6 +53,7 @@ class BeauticianhProfileManager extends ChangeNotifier {
           'experience_years': experienceYears,
           'phone': phone,
           'profile_image_url': profileImageUrl,
+          'service_cities': serviceCities,
         },
       );
       if (response.data['success'] == true) {

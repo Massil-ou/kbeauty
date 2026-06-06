@@ -23,6 +23,15 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
   final _notes = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    final city = widget.manager.serviceManager.activeSearchCity;
+    if (city?.trim().isNotEmpty == true) {
+      _city.text = city!.trim();
+    }
+  }
+
+  @override
   void dispose() {
     _address.dispose();
     _city.dispose();
@@ -173,7 +182,7 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
           const KBeautySectionTitle(
             title: 'Lieu de la prestation',
             subtitle:
-                'Ces informations seront partagées avec la professionnelle.',
+                'La ville doit être couverte par la professionnelle sélectionnée.',
           ),
           const SizedBox(height: 18),
           TextFormField(
@@ -191,7 +200,13 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
               Expanded(
                 child: TextFormField(
                   controller: _city,
-                  decoration: const InputDecoration(labelText: 'Ville'),
+                  validator: (value) => (value ?? '').trim().isEmpty
+                      ? 'La ville est requise.'
+                      : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Ville',
+                    prefixIcon: Icon(Icons.location_city_outlined),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -228,7 +243,7 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
       scheduledDate: _bookingManager.selectedDate!,
       scheduledTime: _bookingManager.selectedTime!,
       locationAddress: _address.text.trim(),
-      locationCity: _city.text.trim().isEmpty ? null : _city.text.trim(),
+      locationCity: _city.text.trim(),
       locationWilaya: _wilaya.text.trim().isEmpty ? null : _wilaya.text.trim(),
     );
     if (booking != null && mounted) {

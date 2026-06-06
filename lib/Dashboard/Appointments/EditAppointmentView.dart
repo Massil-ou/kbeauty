@@ -193,8 +193,12 @@ class _EditAppointmentViewState extends State<EditAppointmentView> {
                                 Expanded(
                                   child: TextFormField(
                                     controller: _city,
+                                    validator: _required,
                                     decoration: const InputDecoration(
-                                        labelText: 'Ville'),
+                                      labelText: 'Ville',
+                                      prefixIcon:
+                                          Icon(Icons.location_city_outlined),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 10),

@@ -23,6 +23,7 @@ class ServiceManager extends ChangeNotifier {
   String? lastError;
 
   ServiceModel? selectedService;
+  String? activeSearchCity;
   int _currentPage = 1;
 
   // =========================================================================
@@ -59,12 +60,16 @@ class ServiceManager extends ChangeNotifier {
   Future<void> searchServices({
     String? query,
     String? category,
+    String? city,
     double? clientLat,
     double? clientLon,
     int radiusKm = 10,
     int page = 1,
   }) async {
     isLoading = true;
+    if (city?.trim().isNotEmpty == true) {
+      activeSearchCity = city!.trim();
+    }
     notifyListeners();
 
     try {
@@ -73,6 +78,7 @@ class ServiceManager extends ChangeNotifier {
         data: {
           'query': query,
           'category': category,
+          'city': activeSearchCity,
           'client_lat': clientLat,
           'client_lon': clientLon,
           'radius_km': radiusKm,
@@ -143,11 +149,13 @@ class ServiceManager extends ChangeNotifier {
   Future<void> loadMore({
     String? query,
     String? category,
+    String? city,
   }) async {
     if (!hasMore || isLoading) return;
     await searchServices(
       query: query,
       category: category,
+      city: city ?? activeSearchCity,
       page: _currentPage + 1,
     );
   }
@@ -159,6 +167,7 @@ class ServiceManager extends ChangeNotifier {
     lastError = null;
     _currentPage = 1;
     selectedService = null;
+    activeSearchCity = null;
     notifyListeners();
   }
 
@@ -188,7 +197,10 @@ class ServiceManager extends ChangeNotifier {
         },
       );
       if (response.data['success'] == true) {
-        await searchServices();
+        await listMine();
+        if (activeSearchCity?.isNotEmpty == true) {
+          await searchServices(city: activeSearchCity);
+        }
         return response.data['data']['serviceId']?.toString();
       }
       lastError = response.data['message']?.toString();
@@ -263,7 +275,9 @@ class ServiceManager extends ChangeNotifier {
       final response = await _manager.dio.post(endpoint, data: data);
       if (response.data['success'] == true) {
         await listMine();
-        await searchServices();
+        if (activeSearchCity?.isNotEmpty == true) {
+          await searchServices(city: activeSearchCity);
+        }
         return true;
       }
       lastError = response.data['message']?.toString();

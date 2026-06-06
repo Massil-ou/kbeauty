@@ -312,6 +312,7 @@ class BeauticianhProfileModel {
   final String? profileImageUrl;
   final String? companyName;
   final String? tradeName;
+  final List<String> serviceCities;
 
   BeauticianhProfileModel({
     required this.id,
@@ -328,6 +329,7 @@ class BeauticianhProfileModel {
     this.profileImageUrl,
     this.companyName,
     this.tradeName,
+    this.serviceCities = const [],
   });
 
   String get fullName => '$firstName $lastName';
@@ -355,6 +357,7 @@ class BeauticianhProfileModel {
       profileImageUrl: json['profileImageUrl']?.toString(),
       companyName: json['companyName']?.toString(),
       tradeName: json['tradeName']?.toString(),
+      serviceCities: List<String>.from(json['serviceCities'] ?? []),
     );
   }
 }
