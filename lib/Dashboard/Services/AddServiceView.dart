@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../App/Manager.dart';
+import '../../Shared/KBeautyImageUpload.dart';
 import '../../Shared/KBeautyTheme.dart';
 import '../../Shared/KBeautyWidgets.dart';
 
@@ -20,9 +21,10 @@ class _AddServiceViewState extends State<AddServiceView> {
   final _description = TextEditingController();
   final _subcategory = TextEditingController();
   final _price = TextEditingController();
-  final _imageUrl = TextEditingController();
+  String? _imageUrl;
   String? _category;
   int _duration = 60;
+  bool _uploadingImage = false;
 
   static const durations = [30, 45, 60, 75, 90, 120, 150, 180];
 
@@ -38,7 +40,6 @@ class _AddServiceViewState extends State<AddServiceView> {
     _description.dispose();
     _subcategory.dispose();
     _price.dispose();
-    _imageUrl.dispose();
     super.dispose();
   }
 
@@ -143,13 +144,79 @@ class _AddServiceViewState extends State<AddServiceView> {
             ),
           ),
           const SizedBox(height: 13),
-          TextFormField(
-            controller: _imageUrl,
-            keyboardType: TextInputType.url,
-            decoration: const InputDecoration(
-              labelText: 'URL de la photo principale',
-              hintText: 'https://...',
-              prefixIcon: Icon(Icons.image_outlined),
+          _imageUploader(),
+        ],
+      ),
+    );
+  }
+
+  Widget _imageUploader() {
+    final imageUrl = _imageUrl;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: KBeautyTheme.primarySoft.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: KBeautyTheme.primary.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.image_outlined, color: KBeautyTheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  imageUrl == null
+                      ? 'Photo principale de la prestation'
+                      : 'Photo principale téléversée',
+                  style: const TextStyle(
+                    color: KBeautyTheme.text,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (imageUrl != null) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                imageUrl,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 120,
+                  alignment: Alignment.center,
+                  color: Colors.white,
+                  child: const Text('Aperçu indisponible'),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _uploadingImage ? null : _pickAndUploadImage,
+              icon: _uploadingImage
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.upload_file_outlined),
+              label: Text(
+                _uploadingImage
+                    ? 'Téléversement...'
+                    : imageUrl == null
+                        ? 'Téléverser une photo'
+                        : 'Changer la photo',
+              ),
             ),
           ),
         ],
@@ -250,7 +317,6 @@ class _AddServiceViewState extends State<AddServiceView> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final category = _category;
     if (category == null) return;
-    final image = _imageUrl.text.trim();
     final id = await widget.manager.serviceManager.createService(
       title: _title.text.trim(),
       description: _description.text.trim(),
@@ -259,7 +325,7 @@ class _AddServiceViewState extends State<AddServiceView> {
           _subcategory.text.trim().isEmpty ? null : _subcategory.text.trim(),
       price: double.parse(_price.text.replaceAll(',', '.').trim()),
       durationMinutes: _duration,
-      images: image.isEmpty ? const [] : [image],
+      images: _imageUrl == null ? const [] : [_imageUrl!],
     );
     if (id == null || !mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -270,4 +336,30 @@ class _AddServiceViewState extends State<AddServiceView> {
 
   String? _required(String? value) =>
       (value ?? '').trim().isEmpty ? 'Ce champ est requis.' : null;
+
+  Future<void> _pickAndUploadImage() async {
+    final picked = await pickKBeautyImage();
+    if (picked == null) return;
+    setState(() => _uploadingImage = true);
+    final url = await widget.manager.serviceManager.uploadImage(
+      bytes: picked.bytes,
+      filename: picked.name,
+      purpose: 'service',
+    );
+    if (!mounted) return;
+    setState(() {
+      _uploadingImage = false;
+      if (url?.isNotEmpty == true) _imageUrl = url;
+    });
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.manager.serviceManager.lastError ??
+                'Téléversement impossible.',
+          ),
+        ),
+      );
+    }
+  }
 }

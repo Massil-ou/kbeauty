@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../App/Manager.dart';
+import '../Shared/KBeautyImageUpload.dart';
 import '../Shared/KBeautyTheme.dart';
 import '../Shared/KBeautyWidgets.dart';
 
@@ -52,6 +53,7 @@ class _ProfileViewState extends State<ProfileView> {
   final _serviceCities = TextEditingController();
   bool _hydratedPro = false;
   bool _hydratedBeauty = false;
+  bool _uploadingProfileImage = false;
 
   @override
   void initState() {
@@ -482,13 +484,7 @@ class _ProfileViewState extends State<ProfileView> {
                 keyboard: TextInputType.phone,
               ),
               const SizedBox(height: 12),
-              _field(
-                _profileImageUrl,
-                'URL de la photo de profil',
-                Icons.image_outlined,
-                required: false,
-                keyboard: TextInputType.url,
-              ),
+              _profileImageUploader(),
               const SizedBox(height: 12),
               _field(
                 _serviceCities,
@@ -530,6 +526,82 @@ class _ProfileViewState extends State<ProfileView> {
         validator: required ? _required : null,
         decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
       );
+
+  Widget _profileImageUploader() {
+    final imageUrl = _profileImageUrl.text.trim();
+    final hasImage = imageUrl.isNotEmpty;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: KBeautyTheme.primarySoft.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: KBeautyTheme.primary.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.photo_camera_outlined,
+                  color: KBeautyTheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  hasImage
+                      ? 'Photo professionnelle téléversée'
+                      : 'Photo professionnelle',
+                  style: const TextStyle(
+                    color: KBeautyTheme.text,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (hasImage) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                imageUrl,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 120,
+                  alignment: Alignment.center,
+                  color: Colors.white,
+                  child: const Text('Aperçu indisponible'),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _uploadingProfileImage ? null : _pickProfileImage,
+              icon: _uploadingProfileImage
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.upload_file_outlined),
+              label: Text(
+                _uploadingProfileImage
+                    ? 'Téléversement...'
+                    : hasImage
+                        ? 'Changer la photo'
+                        : 'Téléverser une photo',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _saveButton({
     required bool loading,
@@ -598,6 +670,26 @@ class _ProfileViewState extends State<ProfileView> {
           .toList(),
     );
     _toast(ok ? 'Profil beauté enregistré.' : _beauty.lastError ?? 'Erreur.');
+  }
+
+  Future<void> _pickProfileImage() async {
+    final picked = await pickKBeautyImage();
+    if (picked == null) return;
+    setState(() => _uploadingProfileImage = true);
+    final url = await widget.manager.serviceManager.uploadImage(
+      bytes: picked.bytes,
+      filename: picked.name,
+      purpose: 'profile',
+    );
+    if (!mounted) return;
+    setState(() {
+      _uploadingProfileImage = false;
+      if (url?.isNotEmpty == true) _profileImageUrl.text = url!;
+    });
+    if (url == null || url.isEmpty) {
+      _toast(widget.manager.serviceManager.lastError ??
+          'Téléversement impossible.');
+    }
   }
 
   void _toast(String message) {

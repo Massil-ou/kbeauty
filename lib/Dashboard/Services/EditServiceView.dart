@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../App/Manager.dart';
+import '../../Shared/KBeautyImageUpload.dart';
+import '../../Shared/KBeautyTheme.dart';
 import '../../Shared/KBeautyWidgets.dart';
 import '../../Shared/Models.dart';
 
@@ -26,10 +28,11 @@ class _EditServiceViewState extends State<EditServiceView> {
   final _description = TextEditingController();
   final _subcategory = TextEditingController();
   final _price = TextEditingController();
-  final _image = TextEditingController();
+  String? _imageUrl;
   String? _category;
   int _duration = 60;
   bool _hydrated = false;
+  bool _uploadingImage = false;
   late final _manager = widget.manager.serviceManager;
 
   @override
@@ -58,7 +61,7 @@ class _EditServiceViewState extends State<EditServiceView> {
     _description.text = service.description;
     _subcategory.text = service.subcategory ?? '';
     _price.text = service.price.toStringAsFixed(2);
-    _image.text = service.images.isEmpty ? '' : service.images.first;
+    _imageUrl = service.images.isEmpty ? null : service.images.first;
     _category = service.category;
     _duration = _durations.contains(service.durationMinutes)
         ? service.durationMinutes
@@ -72,7 +75,6 @@ class _EditServiceViewState extends State<EditServiceView> {
     _description.dispose();
     _subcategory.dispose();
     _price.dispose();
-    _image.dispose();
     super.dispose();
   }
 
@@ -122,7 +124,7 @@ class _EditServiceViewState extends State<EditServiceView> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            _field(_image, 'URL de la photo', required: false),
+                            _imageUploader(),
                           ],
                         ),
                       ),
@@ -223,12 +225,85 @@ class _EditServiceViewState extends State<EditServiceView> {
         decoration: InputDecoration(labelText: label),
       );
 
+  Widget _imageUploader() {
+    final imageUrl = _imageUrl;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: KBeautyTheme.primarySoft.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: KBeautyTheme.primary.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.image_outlined, color: KBeautyTheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  imageUrl == null
+                      ? 'Photo de la prestation'
+                      : 'Photo de la prestation téléversée',
+                  style: const TextStyle(
+                    color: KBeautyTheme.text,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (imageUrl != null) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                imageUrl,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 120,
+                  alignment: Alignment.center,
+                  color: Colors.white,
+                  child: const Text('Aperçu indisponible'),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _uploadingImage ? null : _pickAndUploadImage,
+              icon: _uploadingImage
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.upload_file_outlined),
+              label: Text(
+                _uploadingImage
+                    ? 'Téléversement...'
+                    : imageUrl == null
+                        ? 'Téléverser une photo'
+                        : 'Changer la photo',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final price = double.tryParse(_price.text.replaceAll(',', '.'));
     final category = _category;
     if (price == null || price <= 0 || category == null) return;
-    final image = _image.text.trim();
     final ok = await _manager.updateService(
       id: widget.serviceId,
       title: _title.text.trim(),
@@ -237,9 +312,31 @@ class _EditServiceViewState extends State<EditServiceView> {
       subcategory: _subcategory.text.trim(),
       price: price,
       durationMinutes: _duration,
-      images: image.isEmpty ? [] : [image],
+      images: _imageUrl == null ? [] : [_imageUrl!],
     );
     if (ok && mounted) context.go('/beautician/services');
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final picked = await pickKBeautyImage();
+    if (picked == null) return;
+    setState(() => _uploadingImage = true);
+    final url = await _manager.uploadImage(
+      bytes: picked.bytes,
+      filename: picked.name,
+      purpose: 'service',
+    );
+    if (!mounted) return;
+    setState(() {
+      _uploadingImage = false;
+      if (url?.isNotEmpty == true) _imageUrl = url;
+    });
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(_manager.lastError ?? 'Téléversement impossible.')),
+      );
+    }
   }
 
   String? _required(String? value) =>

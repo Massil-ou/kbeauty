@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../../Shared/Models.dart';
@@ -237,6 +240,35 @@ class ServiceManager extends ChangeNotifier {
       lastError = e.toString();
     } finally {
       isSaving = false;
+      notifyListeners();
+    }
+    return null;
+  }
+
+  Future<String?> uploadImage({
+    required Uint8List bytes,
+    required String filename,
+    required String purpose,
+  }) async {
+    lastError = null;
+    try {
+      final response = await _manager.dio.post(
+        '/kbeauty/uploads/image',
+        data: FormData.fromMap({
+          'purpose': purpose,
+          'image': MultipartFile.fromBytes(bytes, filename: filename),
+        }),
+      );
+      if (response.data['success'] == true) {
+        final data = response.data['data'] is Map
+            ? Map<String, dynamic>.from(response.data['data'] as Map)
+            : <String, dynamic>{};
+        return data['url']?.toString();
+      }
+      lastError = response.data['message']?.toString();
+    } catch (e) {
+      lastError = e.toString();
+    } finally {
       notifyListeners();
     }
     return null;
