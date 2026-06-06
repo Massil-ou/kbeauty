@@ -16,6 +16,7 @@ class AdminDashboardView extends StatefulWidget {
 
 class _AdminDashboardViewState extends State<AdminDashboardView> {
   late final _manager = widget.manager.adminManager;
+  String _section = 'partners';
 
   @override
   void initState() {
@@ -55,52 +56,167 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               const KBeautySkeletonList(count: 5, compact: true)
             else ...[
               _stats(),
-              if (_manager.pendingPartners.isNotEmpty) ...[
-                const SizedBox(height: 26),
-                KBeautySectionTitle(
-                  title: 'Demandes professionnelles',
-                  subtitle:
-                      '${_manager.pendingPartners.length} dossier(s) à examiner.',
-                ),
-                const SizedBox(height: 13),
-                ..._manager.pendingPartners.map(_partnerRequest),
-              ],
               const SizedBox(height: 26),
-              KBeautySectionTitle(
-                title: 'Catégories',
-                subtitle:
-                    '${_manager.categories.length} catégorie(s) paramétrable(s). Elles ne se suppriment pas.',
-                trailing: ElevatedButton.icon(
-                  onPressed: () => _categoryDialog(),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Ajouter'),
-                ),
-              ),
-              const SizedBox(height: 13),
-              ..._manager.categories.map(_category),
-              const SizedBox(height: 26),
-              KBeautySectionTitle(
-                title: 'Prestations à modérer',
-                subtitle: '${_manager.services.length} prestation(s) au total.',
-              ),
-              const SizedBox(height: 13),
-              ..._manager.services.map(_service),
-              const SizedBox(height: 26),
-              KBeautySectionTitle(
-                title: 'Utilisateurs',
-                subtitle: '${_manager.users.length} compte(s) synchronisé(s).',
-              ),
-              const SizedBox(height: 13),
-              KBeautyCard(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: _manager.users.take(100).map(_user).toList(),
-                ),
-              ),
+              _sectionPicker(),
+              const SizedBox(height: 18),
+              _selectedSection(),
             ],
           ],
         ),
       ),
+    );
+  }
+
+  Widget _sectionPicker() {
+    final items = [
+      (
+        id: 'partners',
+        label: 'Demandes pro',
+        icon: Icons.workspace_premium_outlined,
+        count: _manager.pendingPartners.length,
+      ),
+      (
+        id: 'categories',
+        label: 'Catégories',
+        icon: Icons.category_outlined,
+        count: _manager.categories.length,
+      ),
+      (
+        id: 'services',
+        label: 'Annonces',
+        icon: Icons.spa_outlined,
+        count: _manager.services.length,
+      ),
+      (
+        id: 'users',
+        label: 'Utilisateurs',
+        icon: Icons.people_alt_outlined,
+        count: _manager.users.length,
+      ),
+    ];
+    return KBeautyCard(
+      padding: const EdgeInsets.all(8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: items
+            .map(
+              (item) => ChoiceChip(
+                selected: _section == item.id,
+                onSelected: (_) => setState(() => _section = item.id),
+                avatar: Icon(item.icon, size: 17),
+                label: Text('${item.label} (${item.count})'),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _selectedSection() {
+    switch (_section) {
+      case 'categories':
+        return _categoriesSection();
+      case 'services':
+        return _servicesSection();
+      case 'users':
+        return _usersSection();
+      case 'partners':
+      default:
+        return _partnersSection();
+    }
+  }
+
+  Widget _partnersSection() {
+    if (_manager.pendingPartners.isEmpty) {
+      return const KBeautyEmptyState(
+        icon: Icons.verified_outlined,
+        title: 'Aucune demande en attente',
+        message: 'Les demandes professionnelles à valider apparaîtront ici.',
+      );
+    }
+    return Column(
+      children: [
+        KBeautySectionTitle(
+          title: 'Demandes professionnelles',
+          subtitle: '${_manager.pendingPartners.length} dossier(s) à examiner.',
+        ),
+        const SizedBox(height: 13),
+        ..._manager.pendingPartners.map(_partnerRequest),
+      ],
+    );
+  }
+
+  Widget _categoriesSection() {
+    return Column(
+      children: [
+        KBeautySectionTitle(
+          title: 'Catégories',
+          subtitle:
+              '${_manager.categories.length} catégorie(s) paramétrable(s). Elles ne se suppriment pas.',
+          trailing: ElevatedButton.icon(
+            onPressed: () => _categoryDialog(),
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Ajouter'),
+          ),
+        ),
+        const SizedBox(height: 13),
+        if (_manager.categories.isEmpty)
+          const KBeautyEmptyState(
+            icon: Icons.category_outlined,
+            title: 'Aucune catégorie',
+            message: 'Ajoutez au moins une catégorie pour publier des offres.',
+          )
+        else
+          ..._manager.categories.map(_category),
+      ],
+    );
+  }
+
+  Widget _servicesSection() {
+    return Column(
+      children: [
+        KBeautySectionTitle(
+          title: 'Annonces à modérer',
+          subtitle: '${_manager.services.length} prestation(s) au total.',
+        ),
+        const SizedBox(height: 13),
+        if (_manager.services.isEmpty)
+          const KBeautyEmptyState(
+            icon: Icons.spa_outlined,
+            title: 'Aucune annonce',
+            message:
+                'Les prestations publiées par les professionnelles seront listées ici.',
+          )
+        else
+          ..._manager.services.map(_service),
+      ],
+    );
+  }
+
+  Widget _usersSection() {
+    return Column(
+      children: [
+        KBeautySectionTitle(
+          title: 'Utilisateurs',
+          subtitle:
+              '${_manager.users.length} compte(s) synchronisé(s). Les rôles kbeauty sont admin, client ou beautician.',
+        ),
+        const SizedBox(height: 13),
+        if (_manager.users.isEmpty)
+          const KBeautyEmptyState(
+            icon: Icons.people_alt_outlined,
+            title: 'Aucun utilisateur',
+            message: 'Les comptes apparaîtront ici après synchronisation.',
+          )
+        else
+          KBeautyCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: _manager.users.take(100).map(_user).toList(),
+            ),
+          ),
+      ],
     );
   }
 
