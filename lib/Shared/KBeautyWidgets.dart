@@ -89,9 +89,9 @@ class KBeautyHeader extends StatelessWidget implements PreferredSizeWidget {
           child: const Text('Connexion'),
         ),
         const SizedBox(width: 4),
-        ElevatedButton(
+        TextButton(
           onPressed: () => context.go('/signup'),
-          style: ElevatedButton.styleFrom(
+          style: TextButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
           ),
           child: const Text('Inscription'),
