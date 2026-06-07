@@ -141,6 +141,7 @@ class Manager extends ChangeNotifier {
       prefs.setString(_emailKey, _currentEmail),
       prefs.setString(_phoneKey, _currentPhone),
     ]);
+    await refreshKBeautySession(notify: false);
     notifyListeners();
   }
 
@@ -207,13 +208,42 @@ class Manager extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> refreshKBeautySession({bool notify = true}) async {
+    if (!isAuthenticated) return;
+    try {
+      final response = await dio.post('/kbeauty/auth/session');
+      final json = response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : <String, dynamic>{};
+      if (json['success'] != true || json['data'] is! Map) return;
+      final data = Map<String, dynamic>.from(json['data'] as Map);
+      final user = data['user'] is Map
+          ? Map<String, dynamic>.from(data['user'] as Map)
+          : <String, dynamic>{};
+      final role = _normalizeRole(user['role']?.toString());
+      _currentUserRole = role;
+      _currentFirstName = user['first_name']?.toString() ?? _currentFirstName;
+      _currentLastName = user['last_name']?.toString() ?? _currentLastName;
+      _currentEmail = user['email']?.toString() ?? _currentEmail;
+      _currentPhone = user['number']?.toString() ?? _currentPhone;
+
+      final prefs = _preferences ?? await SharedPreferences.getInstance();
+      await Future.wait([
+        prefs.setString(_roleKey, role),
+        prefs.setString(_firstNameKey, _currentFirstName),
+        prefs.setString(_lastNameKey, _currentLastName),
+        prefs.setString(_emailKey, _currentEmail),
+        prefs.setString(_phoneKey, _currentPhone),
+      ]);
+      if (notify) notifyListeners();
+    } catch (_) {}
+  }
+
   String _normalizeRole(String? role) {
     switch ((role ?? '').trim().toLowerCase()) {
       case 'admin':
         return 'admin';
       case 'beautician':
-      case 'partner':
-      case 'manager':
         return 'beautician';
       default:
         return 'client';

@@ -29,7 +29,7 @@ class AccountManager extends ChangeNotifier {
     notifyListeners();
     try {
       final response = await _manager.dio.post(
-        '/cutoma/client/profile/update',
+        '/kbeauty/client/profile/update',
         data: {
           'first_name': firstName,
           'last_name': lastName,

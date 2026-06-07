@@ -69,7 +69,7 @@ class AuthManager extends ChangeNotifier {
     required String email,
     required String password,
   }) =>
-      _post('/cutoma/login/auth_login', {
+      _post('/kbeauty/login/auth_login', {
         'email': email.trim().toLowerCase(),
         'password': password,
       });
@@ -80,7 +80,7 @@ class AuthManager extends ChangeNotifier {
     required String otp,
   }) =>
       _post(
-        '/cutoma/login/auth_login_otp',
+        '/kbeauty/login/auth_login_otp',
         {
           'email': email.trim().toLowerCase(),
           'password': password,
@@ -96,7 +96,7 @@ class AuthManager extends ChangeNotifier {
     required String password,
     required String phone,
   }) =>
-      _post('/cutoma/register/auth_register', {
+      _post('/kbeauty/register/auth_register', {
         'first_name': firstName.trim(),
         'last_name': lastName.trim(),
         'email': email.trim().toLowerCase(),
@@ -110,7 +110,7 @@ class AuthManager extends ChangeNotifier {
     required String otp,
   }) =>
       _post(
-        '/cutoma/register/auth_register_verify_otp',
+        '/kbeauty/register/auth_register_verify_otp',
         {
           'email': email.trim().toLowerCase(),
           'password': password,
@@ -120,12 +120,12 @@ class AuthManager extends ChangeNotifier {
       );
 
   Future<AuthResult> resendRegistrationOtp(String email) =>
-      _post('/cutoma/register/auth_register_resend_otp', {
+      _post('/kbeauty/register/auth_register_resend_otp', {
         'email': email.trim().toLowerCase(),
       });
 
   Future<AuthResult> forgotPassword(String email) =>
-      _post('/cutoma/password/auth_forgot_password', {
+      _post('/kbeauty/password/auth_forgot_password', {
         'email': email.trim().toLowerCase(),
       });
 
@@ -133,7 +133,7 @@ class AuthManager extends ChangeNotifier {
     final refresh = manager.refreshToken;
     if (refresh?.isNotEmpty != true) return;
     final result = await _post(
-      '/cutoma/login/auto_login',
+      '/kbeauty/login/auto_login',
       {'refresh_token': refresh},
       saveSession: true,
     );
@@ -144,7 +144,7 @@ class AuthManager extends ChangeNotifier {
     final refresh = manager.refreshToken;
     if (refresh?.isNotEmpty == true) {
       try {
-        await manager.dio.post('/cutoma/auth/logout', data: {
+        await manager.dio.post('/kbeauty/auth/logout', data: {
           'refresh_token': refresh,
         });
       } catch (_) {}
