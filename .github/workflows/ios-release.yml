@@ -1,0 +1,32 @@
+name: iOS Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload_ios:
+        description: Upload IPA to App Store Connect
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      has_ios: ${{ steps.detect.outputs.has_ios }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        run: |
+          if [ -d ios ] && [ -d ios/Runner.xcworkspace ]; then
+            echo "has_ios=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_ios=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-ios:
+    needs: prepare
+    if: needs.prepare.outputs.has_ios == 'true'
+    runs-on: macos-latest
+    steps:
+      - run: echo "No iOS project detected."
