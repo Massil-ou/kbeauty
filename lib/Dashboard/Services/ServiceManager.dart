@@ -8,6 +8,8 @@ import '../../App/Manager.dart';
 
 /// ServiceManager handles searching and browsing beauty services
 class ServiceManager extends ChangeNotifier {
+  static const int maxImageBytes = 40 * 1024 * 1024;
+
   final Manager _manager;
 
   ServiceManager(this._manager);
@@ -251,6 +253,11 @@ class ServiceManager extends ChangeNotifier {
     required String purpose,
   }) async {
     lastError = null;
+    if (bytes.length > maxImageBytes) {
+      lastError = 'Image trop volumineuse. Taille maximale : 40 Mo par image.';
+      notifyListeners();
+      return null;
+    }
     try {
       final response = await _manager.dio.post(
         '/kbeauty/uploads/image',
