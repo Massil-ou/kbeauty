@@ -15,6 +15,7 @@ class AuthResult {
 }
 
 class AuthManager extends ChangeNotifier {
+  static const String _projectCode = 'kbeauty';
   AuthManager(this.manager);
 
   final Manager manager;
@@ -69,7 +70,8 @@ class AuthManager extends ChangeNotifier {
     required String email,
     required String password,
   }) =>
-      _post('/kbeauty/login/auth_login', {
+      _post('/auth/login', {
+        'project_code': _projectCode,
         'email': email.trim().toLowerCase(),
         'password': password,
       });
@@ -80,8 +82,9 @@ class AuthManager extends ChangeNotifier {
     required String otp,
   }) =>
       _post(
-        '/kbeauty/login/auth_login_otp',
+        '/auth/login/verify-otp',
         {
+          'project_code': _projectCode,
           'email': email.trim().toLowerCase(),
           'password': password,
           'otp': otp.trim().toUpperCase(),
@@ -96,9 +99,10 @@ class AuthManager extends ChangeNotifier {
     required String password,
     required String phone,
   }) =>
-      _post('/kbeauty/register/auth_register', {
+      _post('/auth/register', {
         'first_name': firstName.trim(),
         'last_name': lastName.trim(),
+        'project_code': _projectCode,
         'email': email.trim().toLowerCase(),
         'password': password,
         'number': phone.trim(),
@@ -110,8 +114,9 @@ class AuthManager extends ChangeNotifier {
     required String otp,
   }) =>
       _post(
-        '/kbeauty/register/auth_register_verify_otp',
+        '/auth/register/verify-otp',
         {
+          'project_code': _projectCode,
           'email': email.trim().toLowerCase(),
           'password': password,
           'otp': otp.trim().toUpperCase(),
@@ -120,12 +125,14 @@ class AuthManager extends ChangeNotifier {
       );
 
   Future<AuthResult> resendRegistrationOtp(String email) =>
-      _post('/kbeauty/register/auth_register_resend_otp', {
+      _post('/auth/register/resend-otp', {
+        'project_code': _projectCode,
         'email': email.trim().toLowerCase(),
       });
 
   Future<AuthResult> forgotPassword(String email) =>
-      _post('/kbeauty/password/auth_forgot_password', {
+      _post('/auth/password/forgot', {
+        'project_code': _projectCode,
         'email': email.trim().toLowerCase(),
       });
 
@@ -133,7 +140,7 @@ class AuthManager extends ChangeNotifier {
     final refresh = manager.refreshToken;
     if (refresh?.isNotEmpty != true) return;
     final result = await _post(
-      '/kbeauty/login/auto_login',
+      '/auth/refresh',
       {'refresh_token': refresh},
       saveSession: true,
     );
@@ -144,7 +151,8 @@ class AuthManager extends ChangeNotifier {
     final refresh = manager.refreshToken;
     if (refresh?.isNotEmpty == true) {
       try {
-        await manager.dio.post('/kbeauty/auth/logout', data: {
+        await manager.dio.post('/auth/logout', data: {
+          'project_code': _projectCode,
           'refresh_token': refresh,
         });
       } catch (_) {}
