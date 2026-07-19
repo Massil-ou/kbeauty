@@ -133,66 +133,9 @@ jobs:
 
   ios:
     if: ${{ inputs.target == 'all' || inputs.target == 'ios' }}
-    runs-on: macos-latest
-    env:
-      HAS_APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 != '' }}
-      HAS_APPLE_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 != '' }}
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Detect iOS project
-        id: ios_project
+      - name: iOS builds are local only
         run: |
-          if [ -d ios ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "No iOS project in this repository."
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Set up Flutter
-        if: steps.ios_project.outputs.exists == 'true'
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: 3.38.9
-          cache: true
-      - name: Import Apple signing certificate
-        if: steps.ios_project.outputs.exists == 'true' && env.HAS_APPLE_CERTIFICATE == 'true'
-        uses: apple-actions/import-codesign-certs@v3
-        with:
-          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
-          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-      - name: Install provisioning profile
-        if: steps.ios_project.outputs.exists == 'true' && env.HAS_APPLE_PROFILE == 'true'
-        env:
-          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
-        run: |
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          echo "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$HOME/Library/MobileDevice/Provisioning Profiles/app.mobileprovision"
-      - name: Install dependencies
-        if: steps.ios_project.outputs.exists == 'true'
-        run: flutter pub get
-      - name: Build iOS IPA
-        if: steps.ios_project.outputs.exists == 'true'
-        run: flutter build ipa --release --export-method app-store
-      - name: Upload iOS artifact
-        if: steps.ios_project.outputs.exists == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-release-ipa
-          path: build/ios/ipa/*.ipa
-          if-no-files-found: error
-      - name: Upload to TestFlight
-        if: steps.ios_project.outputs.exists == 'true' && inputs.upload_ios
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
-        run: |
-          test -n "$ASC_KEY_ID" || { echo "Missing ASC_KEY_ID secret"; exit 1; }
-          test -n "$ASC_ISSUER_ID" || { echo "Missing ASC_ISSUER_ID secret"; exit 1; }
-          test -n "$ASC_PRIVATE_KEY" || { echo "Missing ASC_PRIVATE_KEY secret"; exit 1; }
-          mkdir -p "$HOME/.appstoreconnect/private_keys"
-          printf '%s' "$ASC_PRIVATE_KEY" > "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
-          ipa=$(ls build/ios/ipa/*.ipa | head -1)
-          xcrun altool --upload-app --type ios --file "$ipa" --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          echo "iOS release builds are disabled on GitHub to avoid macOS minutes."
+          echo "Run scripts/build_ios_local.sh on the Mac instead."
