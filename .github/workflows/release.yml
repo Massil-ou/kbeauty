@@ -1,0 +1,198 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Release target
+        required: true
+        default: all
+        type: choice
+        options: [all, web, android, ios]
+      google_track:
+        description: Google Play track
+        required: true
+        default: internal
+        type: choice
+        options: [internal, alpha, beta, production]
+      upload_android:
+        description: Upload Android AAB to Google Play
+        required: true
+        default: false
+        type: boolean
+      upload_ios:
+        description: Upload iOS IPA to TestFlight
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  web:
+    if: ${{ inputs.target == 'all' || inputs.target == 'web' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.38.9
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Build web
+        if: ${{ hashFiles('web/index.html') != '' }}
+        run: flutter build web --release
+      - name: Upload web artifact
+        if: ${{ hashFiles('build/web/index.html') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-release
+          path: build/web
+          if-no-files-found: error
+
+  android:
+    if: ${{ inputs.target == 'all' || inputs.target == 'android' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Detect Android project
+        id: android_project
+        run: |
+          if [ -f android/app/build.gradle.kts ] || [ -f android/app/build.gradle ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No Android project in this repository."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Set up Java
+        if: steps.android_project.outputs.exists == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Flutter
+        if: steps.android_project.outputs.exists == 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.38.9
+          cache: true
+      - name: Configure Android signing
+        if: steps.android_project.outputs.exists == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64" || { echo "Missing ANDROID_KEYSTORE_BASE64 secret"; exit 1; }
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || { echo "Missing ANDROID_KEYSTORE_PASSWORD secret"; exit 1; }
+          test -n "$ANDROID_KEY_ALIAS" || { echo "Missing ANDROID_KEY_ALIAS secret"; exit 1; }
+          test -n "$ANDROID_KEY_PASSWORD" || { echo "Missing ANDROID_KEY_PASSWORD secret"; exit 1; }
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release-keystore.jks"
+          printf 'storePassword=%s\n' "$ANDROID_KEYSTORE_PASSWORD" > android/key.properties
+          printf 'keyPassword=%s\n' "$ANDROID_KEY_PASSWORD" >> android/key.properties
+          printf 'keyAlias=%s\n' "$ANDROID_KEY_ALIAS" >> android/key.properties
+          printf 'storeFile=%s\n' "$RUNNER_TEMP/release-keystore.jks" >> android/key.properties
+      - name: Install dependencies
+        if: steps.android_project.outputs.exists == 'true'
+        run: flutter pub get
+      - name: Build Android App Bundle
+        if: steps.android_project.outputs.exists == 'true'
+        run: flutter build appbundle --release
+      - name: Upload Android artifact
+        if: steps.android_project.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+      - name: Resolve Android package name
+        if: steps.android_project.outputs.exists == 'true' && inputs.upload_android
+        id: android_package
+        run: |
+          package_name=$(grep -E 'applicationId\s*=' android/app/build.gradle.kts android/app/build.gradle 2>/dev/null | head -1 | sed -E 's/.*applicationId\s*=\s*"([^"]+)".*/\1/')
+          test -n "$package_name" || { echo "Unable to resolve Android applicationId"; exit 1; }
+          echo "name=$package_name" >> "$GITHUB_OUTPUT"
+      - name: Upload to Google Play internal testing
+        if: steps.android_project.outputs.exists == 'true' && inputs.upload_android
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ steps.android_package.outputs.name }}
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: ${{ inputs.google_track }}
+          status: completed
+
+  ios:
+    if: ${{ inputs.target == 'all' || inputs.target == 'ios' }}
+    runs-on: macos-latest
+    env:
+      HAS_APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 != '' }}
+      HAS_APPLE_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Detect iOS project
+        id: ios_project
+        run: |
+          if [ -d ios ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No iOS project in this repository."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Set up Flutter
+        if: steps.ios_project.outputs.exists == 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.38.9
+          cache: true
+      - name: Import Apple signing certificate
+        if: steps.ios_project.outputs.exists == 'true' && env.HAS_APPLE_CERTIFICATE == 'true'
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      - name: Install provisioning profile
+        if: steps.ios_project.outputs.exists == 'true' && env.HAS_APPLE_PROFILE == 'true'
+        env:
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          echo "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$HOME/Library/MobileDevice/Provisioning Profiles/app.mobileprovision"
+      - name: Install dependencies
+        if: steps.ios_project.outputs.exists == 'true'
+        run: flutter pub get
+      - name: Build iOS IPA
+        if: steps.ios_project.outputs.exists == 'true'
+        run: flutter build ipa --release --export-method app-store
+      - name: Upload iOS artifact
+        if: steps.ios_project.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-ipa
+          path: build/ios/ipa/*.ipa
+          if-no-files-found: error
+      - name: Upload to TestFlight
+        if: steps.ios_project.outputs.exists == 'true' && inputs.upload_ios
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          test -n "$ASC_KEY_ID" || { echo "Missing ASC_KEY_ID secret"; exit 1; }
+          test -n "$ASC_ISSUER_ID" || { echo "Missing ASC_ISSUER_ID secret"; exit 1; }
+          test -n "$ASC_PRIVATE_KEY" || { echo "Missing ASC_PRIVATE_KEY secret"; exit 1; }
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          printf '%s' "$ASC_PRIVATE_KEY" > "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          ipa=$(ls build/ios/ipa/*.ipa | head -1)
+          xcrun altool --upload-app --type ios --file "$ipa" --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
