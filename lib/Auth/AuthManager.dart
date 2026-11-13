@@ -37,7 +37,8 @@ class AuthManager extends ChangeNotifier {
     lastError = null;
     notifyListeners();
     try {
-      final response = await manager.dio.post(path, data: data);
+      final response = await manager.dio
+          .post(path, data: {...data, 'project_code': _projectCode});
       final json = response.data is Map
           ? Map<String, dynamic>.from(response.data as Map)
           : <String, dynamic>{};

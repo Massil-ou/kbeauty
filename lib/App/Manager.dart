@@ -39,6 +39,7 @@ class Manager extends ChangeNotifier {
   SharedPreferences? _preferences;
   String? _accessToken = const String.fromEnvironment('ACCESS_TOKEN').trim();
   String? _refreshToken;
+  Future<bool>? _refreshing;
   String? _deviceHeader = const String.fromEnvironment('DEVICE_TOKEN').trim();
   String? _rawDeviceId;
   String? _currentUserId = const String.fromEnvironment('USER_ID').trim();
@@ -299,7 +300,7 @@ class Manager extends ChangeNotifier {
       ),
     );
     instance.interceptors.add(
-      QueuedInterceptorsWrapper(
+      InterceptorsWrapper(
         onRequest: (options, handler) async {
           if (_deviceHeader?.isNotEmpty != true) {
             _preferences ??= await SharedPreferences.getInstance();
@@ -310,15 +311,73 @@ class Manager extends ChangeNotifier {
             }
             _deviceHeader = _createDeviceHeader(_rawDeviceId!);
           }
+          if (_rawDeviceId?.isNotEmpty == true) {
+            _deviceHeader = _createDeviceHeader(_rawDeviceId!);
+          }
           options.headers['X-Device-Id'] = _deviceHeader;
           if (_accessToken?.isNotEmpty == true) {
             options.headers['Authorization'] = 'Bearer $_accessToken';
           }
           handler.next(options);
         },
+        onResponse: (response, handler) async {
+          final request = response.requestOptions;
+          final isAuth = request.path.startsWith('/auth/');
+          if (response.statusCode == 401 &&
+              !isAuth &&
+              request.extra['sessionRetried'] != true &&
+              _refreshToken?.isNotEmpty == true) {
+            try {
+              if (await _renewAccessToken()) {
+                request.extra['sessionRetried'] = true;
+                if (request.data is FormData) {
+                  request.data = (request.data as FormData).clone();
+                }
+                final retried = await instance.fetch<dynamic>(request);
+                if (retried.statusCode == 401) await clearAuth();
+                return handler.resolve(retried);
+              }
+            } catch (e) {
+              return handler
+                  .reject(DioException(requestOptions: request, error: e));
+            }
+          }
+          handler.next(response);
+        },
       ),
     );
     return instance;
+  }
+
+  Future<bool> _renewAccessToken() {
+    return _refreshing ??=
+        _performRefresh().whenComplete(() => _refreshing = null);
+  }
+
+  Future<bool> _performRefresh() async {
+    final response = await dio.post('/auth/refresh', data: {
+      'project_code': 'kbeauty',
+      'refresh_token': _refreshToken,
+    });
+    final body = response.data;
+    if (response.statusCode == 200 &&
+        body is Map &&
+        body['success'] == true &&
+        body['data'] is Map) {
+      final tokens = body['data'] as Map;
+      final access = tokens['access_token']?.toString() ?? '';
+      final refresh = tokens['refresh_token']?.toString() ?? '';
+      if (access.isEmpty || refresh.isEmpty) return false;
+      final prefs = _preferences ??= await SharedPreferences.getInstance();
+      await prefs.setString(_accessKey, access);
+      await prefs.setString(_refreshKey, refresh);
+      _accessToken = access;
+      _refreshToken = refresh;
+      return true;
+    }
+    if (response.statusCode == 401 || response.statusCode == 403)
+      await clearAuth();
+    return false;
   }
 
   Future<T> apiCall<T>(
